@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- ─── Primary Meta ─────────────────────────────────── -->
+    <title>Caraidiz 💎 — watching becomes playing</title>
+    <meta name="description" content="The first social format where watching becomes playing. Daily charades challenges, streaks, and leaderboards." />
+    <meta name="theme-color" content="#0A0A0F" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- ─── Apple / iOS PWA ──────────────────────────────── -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Caraidiz" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- iOS splash screens (add more sizes as needed) -->
+    <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
+
+    <!-- ─── PWA Manifest ─────────────────────────────────── -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ─── Favicon ──────────────────────────────────────── -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+
+    <!-- ─── Open Graph (share preview) ──────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Caraidiz 💎 — watching becomes playing" />
+    <meta property="og:description" content="Daily charades challenges. Guess the Cara. Protect your streak." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta property="og:url" content="https://caraidiz.com" />
+
+    <!-- ─── Twitter Card ─────────────────────────────────── -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Caraidiz 💎" />
+    <meta name="twitter:description" content="Daily charades. Guess the Cara. Protect your streak." />
+    <meta name="twitter:image" content="/icons/icon-512.png" />
+
+    <!-- ─── Prevent tap highlight on mobile ─────────────── -->
+    <style>
+      * { -webkit-tap-highlight-color: transparent; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #0A0A0F;
+        height: 100%;
+        overscroll-behavior: none;
+      }
+      /* Safe area insets for iPhone notch / home bar */
+      #root {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <!-- ─── Vite / React entry ───────────────────────────── -->
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- ─── Service Worker Registration ─────────────────── -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((reg) => {
+              console.log("✅ Caraidiz SW registered:", reg.scope);
+
+              // Check for updates every time the app loads
+              reg.update();
+
+              // Notify user when a new version is available
+              reg.addEventListener("updatefound", () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener("statechange", () => {
+                  if (
+                    newWorker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  ) {
+                    // Optional: show "Update available" banner
+                    console.log("🔄 New version available — reload to update");
+                  }
+                });
+              });
+            })
+            .catch((err) => console.warn("SW registration failed:", err));
+        });
+      }
+    </script>
+  </body>
+</html>
