@@ -19,16 +19,24 @@ import { useState, useEffect, useRef } from "react";
 
 // ─── CARA LIBRARY ─────────────────────────────────────────────
 const CARAS = [
-  { category: "Brand",   answer: "Nike",             wordCount: 1, hint: "Sporting goods giant. Just do it. 👟",                    videoUrl: null },
-  { category: "Film",    answer: "Titanic",           wordCount: 1, hint: "1997. Leonardo DiCaprio. 'I'm the king of the world.' 🚢", videoUrl: null },
-  { category: "Song",    answer: "Thriller",          wordCount: 1, hint: "Michael Jackson. Zombies. 1982. 🕺",                       videoUrl: null },
-  { category: "Sport",   answer: "Tennis",            wordCount: 1, hint: "Racket. Net. Love means zero. 🎾",                        videoUrl: null },
-  { category: "TV Show", answer: "Friends",           wordCount: 1, hint: "Could it BE any more iconic? ☕",                         videoUrl: null },
-  { category: "Brand",   answer: "Apple",             wordCount: 1, hint: "Think different. The bitten fruit. 🍎",                   videoUrl: null },
-  { category: "Phrase",  answer: "Break a leg",       wordCount: 3, hint: "What you say before someone goes on stage. 🎭",           videoUrl: null },
-  { category: "Film",    answer: "The Lion King",     wordCount: 3, hint: "Hakuna Matata. African savanna. 1994. 🦁",                videoUrl: null },
-  { category: "TV Show", answer: "Stranger Things",   wordCount: 2, hint: "Upside Down. Hawkins Indiana. 1980s. 👾",                 videoUrl: null },
-  { category: "Song",    answer: "Bohemian Rhapsody", wordCount: 2, hint: "Queen. Is this the real life? 🎸",                        videoUrl: null },
+  { category: "Brand", answer: "Gillette", wordCount: 1,
+    hint: "The best a man can get 🪒",
+    videoUrl: "https://www.tiktok.com/embed/v2/7625271501587074335" },
+  { category: "Song", answer: "Umbrella", wordCount: 1,
+    hint: "Rihanna. Ella ella ella ☂️",
+    videoUrl: "https://www.tiktok.com/embed/v2/7625382776363175198" },
+  { category: "Brand", answer: "Revlon", wordCount: 1,
+    hint: "Iconic American beauty brand 💄",
+    videoUrl: "https://www.tiktok.com/embed/v2/7624913489915612447" },
+  { category: "Song", answer: "Thriller", wordCount: 1,
+    hint: "Michael Jackson. Zombies. 1982. 🕺",
+    videoUrl: "https://www.tiktok.com/embed/v2/7624658251241622814" },
+  { category: "Phrase", answer: "I break up with you", wordCount: 5,
+    hint: "Something you say at the end of a relationship 💔",
+    videoUrl: "https://www.tiktok.com/embed/v2/7624283355072253215" },
+  { category: "TV Show", answer: "Olivia Pope", wordCount: 2,
+    hint: "Scandal. Kerry Washington. Fixer in Washington DC 🍷",
+    videoUrl: "https://www.tiktok.com/embed/v2/7624283355072253215" },
 ];
 
 // ─── CONSTANTS ────────────────────────────────────────────────
