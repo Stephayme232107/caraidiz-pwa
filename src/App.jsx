@@ -202,7 +202,7 @@ const G = `
   .vid::before{content:'';display:block;padding-top:177.78%}
   .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px}
   .diff-chip{display:none}
-  .tension-chip{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;backdrop-filter:blur(4px)}
+  .tension-chip{display:none}
 
   /* PLAY */
   .pbody{padding:14px 20px 18px}
@@ -263,6 +263,11 @@ const G = `
 
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
+
+  /* HOOK */
+  .hook-wrap{padding:10px 20px 8px;text-align:center}
+  .hook-main{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em;color:#fff;line-height:1;text-shadow:0 0 20px rgba(255,255,255,0.3),0 0 40px rgba(128,222,234,0.2);margin-bottom:2px}
+  .hook-sub{font-size:12px;color:rgba(255,255,255,0.5);font-weight:600;letter-spacing:.08em}
   /* TIMER */
   .timer-wrap{padding:4px 16px 0;position:relative}
   .timer-track{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
@@ -276,28 +281,22 @@ const G = `
   /* CATEGORY BADGE */
   .cat-badge-overlay{
     position:absolute;
-    top:12px;left:12px;
+    top:10px;left:10px;
     z-index:10;
-    display:flex;flex-direction:column;gap:3px;
     animation:catFadeIn .2s ease-out;
   }
   .cat-pill{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:6px 14px;
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 10px;
     border-radius:999px;
-    font-size:11px;font-weight:800;
-    letter-spacing:.1em;text-transform:uppercase;
+    font-size:9px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;
     backdrop-filter:blur(8px);
     white-space:nowrap;
+    opacity:0.85;
   }
-  .cat-pill-emoji{font-size:13px;line-height:1}
-  .cat-sub{
-    font-size:10px;font-weight:600;
-    color:rgba(255,255,255,0.7);
-    padding-left:4px;
-    letter-spacing:.04em;
-  }
-  @keyframes catFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  .cat-pill-emoji{font-size:11px;line-height:1}
+  @keyframes catFadeIn{from{opacity:0}to{opacity:0.85}}
   /* MUTE BUTTON */
   .mute-btn{position:absolute;bottom:14px;right:14px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;transition:transform .1s}
   .mute-btn:active{transform:scale(.9)}
@@ -380,22 +379,18 @@ function VideoBlock({ cara }) {
         : <div className="vid-ph"><span style={{ fontSize: 48, opacity: .12 }}>🎬</span><span>Video loading...</span></div>
       }
 
-      {/* CATEGORY BADGE — top left */}
+      {/* CATEGORY BADGE — top left, small subtle */}
       <div className="cat-badge-overlay">
         <div className="cat-pill" style={{
-          background: `${cc}22`,
-          border: `1.5px solid ${cc}66`,
+          background: "rgba(0,0,0,0.55)",
+          border: `1px solid ${cc}44`,
           color: cc,
-          boxShadow: `0 0 12px ${cc}33`
         }}>
           <span className="cat-pill-emoji">{emoji}</span>
           <span>{cara.category.toUpperCase()} · {wordsLabel}</span>
         </div>
-        <span className="cat-sub">{guessText}</span>
       </div>
 
-      {/* TENSION — top right */}
-      <div className="tension-chip">Only {cara.firstGuessRate}% get this 👀</div>
 
       {/* MUTE — bottom right */}
       <button className="mute-btn" onClick={toggleMute}>
@@ -652,36 +647,49 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
         </div>
       </div>
 
-      {/* CHALLENGE DIVIDER */}
+      {/* TOP HEADLINE */}
       <div style={{
-        textAlign: "center", fontSize: 15, fontWeight: 800,
-        color: "#fff", marginBottom: 6, letterSpacing: ".02em"
-      }}>😈 Can your friends beat this?</div>
+        textAlign: "center", fontSize: 13, fontWeight: 800,
+        color: "#80DEEA", letterSpacing: ".1em",
+        textTransform: "uppercase", marginBottom: 16,
+        textShadow: "0 0 20px rgba(128,222,234,0.5)"
+      }}>ONLY 5% FINISH THIS 💎</div>
 
-      {/* PRIMARY CTA — SHARE */}
+      {/* SOCIAL PROOF LINE */}
+      <div style={{
+        textAlign: "center", fontSize: 14, fontWeight: 700,
+        color: "#fff", marginBottom: 10, letterSpacing: ".02em"
+      }}>I got {correct}/6 — can you beat me?</div>
+
+      {/* PRIMARY CTA — CHALLENGE */}
       <button style={{
-        width: "100%", background: "#80DEEA", color: "#0A0A0F",
-        border: "none", borderRadius: 14, padding: 16,
-        fontFamily: "'Bebas Neue',sans-serif", fontSize: 20,
-        letterSpacing: ".06em", cursor: "pointer",
-        marginBottom: 6, display: "block", textAlign: "center",
-        boxShadow: "0 8px 24px rgba(128,222,234,0.3)"
+        width: "100%",
+        background: "linear-gradient(135deg, #FF6B35, #FF8A65)",
+        color: "#fff",
+        border: "none", borderRadius: 16, padding: "18px 16px",
+        fontFamily: "'Bebas Neue',sans-serif", fontSize: 24,
+        letterSpacing: ".08em", cursor: "pointer",
+        marginBottom: 8, display: "block", textAlign: "center",
+        boxShadow: "0 8px 32px rgba(255,107,53,0.5), 0 0 0 1px rgba(255,138,101,0.3)",
+        animation: "pulseCTA 1.8s ease-in-out infinite",
+        transition: "transform .1s"
       }} onClick={share}>
-        {copied ? "✓ LINK COPIED!" : "📋 SEND THIS CHALLENGE"}
+        {copied ? "✓ LINK COPIED! 🔥" : "🔥 CHALLENGE A FRIEND"}
       </button>
 
-      {/* Share subtext */}
-      <div style={{ textAlign: "center", fontSize: 12, color: "#8888AA", marginBottom: 18 }}>
-        They won't get all 6 😏
+      {/* Below CTA subtext */}
+      <div style={{ textAlign: "center", fontSize: 12, color: "#8888AA", marginBottom: 20 }}>
+        They won't beat your score 😏
       </div>
 
       {/* SECONDARY CTA — PLAY AGAIN */}
       <button style={{
         width: "100%", background: "transparent",
-        border: "1.5px solid rgba(255,255,255,0.15)",
+        border: "1.5px solid rgba(255,255,255,0.12)",
         borderRadius: 14, padding: 14,
-        color: "#fff", fontFamily: "'Bebas Neue',sans-serif",
-        fontSize: 18, letterSpacing: ".06em",
+        color: "rgba(255,255,255,0.7)",
+        fontFamily: "'Bebas Neue',sans-serif",
+        fontSize: 17, letterSpacing: ".06em",
         cursor: "pointer", marginBottom: 10,
         display: "block", textAlign: "center"
       }} onClick={onReplay}>
@@ -787,7 +795,16 @@ export default function App() {
                 ))}</div>
               </div>
             )}
-            {showVid && <VideoBlock cara={cara} />}
+            {showVid && (
+              <>
+                {/* HOOK — above video */}
+                <div className="hook-wrap">
+                  <div className="hook-main">ONLY {cara.firstGuessRate}% GET THIS 👀</div>
+                  <div className="hook-sub">Can you?</div>
+                </div>
+                <VideoBlock cara={cara} />
+              </>
+            )}
             {showVid && <CommentsBlock caraId={cara.id} revealed={phase==="answer"} />}
             {phase === "play" && <PlayScreen cara={cara} onResult={handleResult} onSkip={handleSkip} attempts={attempts} setAttempts={setAttempts} sessionStart={sessionStart} />}
             {phase === "answer" && result && <AnswerScreen cara={cara} result={result} score={score} streak={streak} totalScore={total} onContinue={handleContinue} isLast={isLast} />}
