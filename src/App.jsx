@@ -1,594 +1,485 @@
 // ============================================================
-//  CARAIDIZ 💎 — Daily Cara PWA
-//  /src/App.jsx
-// ============================================================
-//
-//  HOW TO ADD A TIKTOK EMBED URL
-//  ─────────────────────────────
-//  1. On TikTok, copy a video link: https://www.tiktok.com/@user/video/7123456789
-//  2. Convert to embed: https://www.tiktok.com/embed/v2/7123456789
-//  3. Paste into videoUrl field below. Leave null for placeholder.
-//
-//  HOW TO ADD NEW CARAS
-//  ─────────────────────────────
-//  Add objects to the CARAS array. Daily Cara = daysSinceEpoch % CARAS.length
-//  Fields: category · answer · wordCount · hint · videoUrl
+//  CARAIDIZ 💎 — Final v4 with real MP4 videos + Mixpanel
 // ============================================================
 
 import { useState, useEffect, useRef } from "react";
 
-// ─── CARA LIBRARY ─────────────────────────────────────────────
-const CARAS = [
-  { category: "Brand", answer: "Gillette", wordCount: 1,
-    hint: "The best a man can get 🪒",
-    videoUrl: "https://www.tiktok.com/embed/v2/7625271501587074335" },
-  { category: "Song", answer: "Umbrella", wordCount: 1,
-    hint: "Rihanna. Ella ella ella ☂️",
-    videoUrl: "https://www.tiktok.com/embed/v2/7625382776363175198" },
-  { category: "Brand", answer: "Revlon", wordCount: 1,
-    hint: "Iconic American beauty brand 💄",
-    videoUrl: "https://www.tiktok.com/embed/v2/7624913489915612447" },
-  { category: "Song", answer: "Thriller", wordCount: 1,
-    hint: "Michael Jackson. Zombies. 1982. 🕺",
-    videoUrl: "https://www.tiktok.com/embed/v2/7624658251241622814" },
-  { category: "Phrase", answer: "I break up with you", wordCount: 5,
-    hint: "Something you say at the end of a relationship 💔",
-    videoUrl: "https://www.tiktok.com/embed/v2/7624283355072253215" },
-  { category: "TV Show", answer: "Olivia Pope", wordCount: 2,
-    hint: "Scandal. Kerry Washington. Fixer in Washington DC 🍷",
-    videoUrl: "https://www.tiktok.com/embed/v2/7624283355072253215" },
-];
-
-// ─── CONSTANTS ────────────────────────────────────────────────
-const LS_NAME    = "crz_name";
-const LS_STREAK  = "crz_streak";
-const LS_LAST    = "crz_last_date";
-const LS_SCORES  = "crz_scores";
-
-const CAT_COLORS = {
-  Brand:    "#80DEEA",
-  Film:     "#FF8A65",
-  Song:     "#C084FC",
-  Sport:    "#4ADE80",
-  "TV Show":"#FACC15",
-  Phrase:   "#FB7185",
+// ─── MIXPANEL ─────────────────────────────────────────────────
+// 1. Go to mixpanel.com → create free account → new project
+// 2. Copy your Project Token and replace "YOUR_TOKEN_HERE"
+const MIXPANEL_TOKEN = "YOUR_TOKEN_HERE";
+const mp = {
+  init() {
+    if (MIXPANEL_TOKEN === "YOUR_TOKEN_HERE") return;
+    const s = document.createElement("script");
+    s.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
+    s.onload = () => window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: true });
+    document.head.appendChild(s);
+  },
+  track(event, props = {}) {
+    if (typeof window.mixpanel === "undefined") return;
+    window.mixpanel.track(event, { ...props, app: "caraidiz", timestamp: new Date().toISOString() });
+  }
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────
-const todayStr    = () => new Date().toISOString().slice(0, 10);
-const normalize   = (s) => s.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-const loadJSON    = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
-const saveJSON    = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+// ─── CDN BASE URL ─────────────────────────────────────────────
+const CDN = "https://pub-cb42555aad7844b7ac02e5cf231188e1.r2.dev";
 
-function getDailyIndex() {
-  return Math.floor(Date.now() / 86400000) % CARAS.length;
-}
+// ─── 6 CARAS ──────────────────────────────────────────────────
+const CARAS = [
+  {
+    id: 1, category: "Song", answer: "Thriller",
+    wordCount: 1, difficulty: "easy",
+    hint: "Michael Jackson. Zombies. 1982. 🕺",
+    videoUrl: `${CDN}/thriller.mp4.mp4`,
+    firstGuessRate: 61,
+    egoLine: "Only 39% of players miss this one"
+  },
+  {
+    id: 2, category: "Phrase", answer: "I break up with you",
+    wordCount: 5, difficulty: "medium",
+    hint: "What you say at the end of a relationship 💔",
+    videoUrl: `${CDN}/i-break-up.mp4.mp4`,
+    firstGuessRate: 43,
+    egoLine: "You're doing better than 70% of players 🔥"
+  },
+  {
+    id: 3, category: "Brand", answer: "Revlon",
+    wordCount: 1, difficulty: "medium",
+    hint: "Iconic American beauty brand 💄",
+    videoUrl: `${CDN}/revlon.mp4.mp4`,
+    firstGuessRate: 68,
+    egoLine: "Only 32% get this on first try"
+  },
+  {
+    id: 4, category: "TV Show Character", answer: "JR Ewing",
+    wordCount: 2, difficulty: "hard",
+    hint: "Dallas. The ultimate villain. 🤠",
+    videoUrl: `${CDN}/jr-ewing.mp4.mp4`,
+    firstGuessRate: 28,
+    egoLine: "Elite level — less than 30% get this 👑"
+  },
+  {
+    id: 5, category: "Phrase", answer: "Would you marry me",
+    wordCount: 4, difficulty: "hard",
+    hint: "The most important question 💍",
+    videoUrl: `${CDN}/marry-me.mp4.mp4`,
+    firstGuessRate: 55,
+    egoLine: "Top 20% if you got this 🔥"
+  },
+  {
+    id: 6, category: "Bonus", answer: "Coldplay Kiss Cam",
+    wordCount: 3, difficulty: "expert",
+    hint: "A stadium moment + a British band 🎸",
+    videoUrl: `${CDN}/coldplay.mp4.mp4`,
+    firstGuessRate: 22,
+    egoLine: "TOP 5% — only legends get this 💎"
+  },
+];
 
-function tomorrowLabel() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+const MAX_ATTEMPTS = 3;
+const CAT_COLORS = {
+  Song: "#C084FC", Brand: "#80DEEA", Phrase: "#FB7185",
+  "TV Show Character": "#F472B6", Bonus: "#FACC15",
+  Sport: "#4ADE80", Film: "#FF8A65", "TV Show": "#FACC15"
+};
+const DIFF_COLORS = { easy: "#4ADE80", medium: "#FACC15", hard: "#FF8A65", expert: "#F472B6" };
+
+const norm = s => s.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+const loadJSON = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
+
+function scoreFor(attempt, streak, speed) {
+  const base = attempt === 1 ? 100 : attempt === 2 ? 60 : 30;
+  return base + (streak >= 3 ? 50 : 0) + (speed ? 25 : 0);
 }
 
 // ─── STYLES ───────────────────────────────────────────────────
 const G = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { height: 100%; background: #0A0A0F; }
-  body {
-    min-height: 100%;
-    font-family: 'DM Sans', Calibri, sans-serif;
-    color: #fff;
-    background: #0A0A0F;
-    -webkit-font-smoothing: antialiased;
-    overscroll-behavior: none;
-  }
-  input::placeholder { color: #8888AA; }
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700;800&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#0A0A0F;font-family:'DM Sans',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+  input::placeholder{color:#8888AA}
+  .app{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 16px 36px;position:relative}
+  .app::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(ellipse,rgba(128,222,234,0.05) 0%,transparent 70%);pointer-events:none;z-index:0}
+  .card{background:#1A1A2E;border-radius:28px;width:100%;max-width:420px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);box-shadow:0 32px 80px rgba(0,0,0,0.7);position:relative;z-index:1;animation:fadeUp .3s ease-out}
 
-  .crz-root {
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 20px calc(40px + env(safe-area-inset-bottom));
-    position: relative;
-  }
-  .crz-root::before {
-    content: '';
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 500px; height: 500px;
-    background: radial-gradient(ellipse at center, rgba(128,222,234,0.06) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
-  }
+  /* START */
+  .start-bg{width:100%;aspect-ratio:9/12;background:linear-gradient(160deg,#0D0D1A 0%,#1A0D2E 50%,#0A1520 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+  .start-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:300px;height:300px;background:radial-gradient(ellipse,rgba(128,222,234,0.12) 0%,transparent 70%)}
+  .start-logo{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:.12em;background:linear-gradient(135deg,#fff 0%,#80DEEA 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative;z-index:1;margin-bottom:4px}
+  .start-gem{font-size:40px;position:relative;z-index:1;animation:float 3s ease-in-out infinite;margin-bottom:16px}
+  .start-tag{font-size:12px;color:#8888AA;letter-spacing:.16em;text-transform:uppercase;position:relative;z-index:1;margin-bottom:28px}
+  .start-badge{background:rgba(255,107,53,0.15);border:1px solid rgba(255,107,53,0.4);color:#FF6B35;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;position:relative;z-index:1;margin-bottom:6px}
+  .start-count{font-size:13px;color:rgba(255,255,255,0.45);position:relative;z-index:1}
+  .start-body{padding:20px}
+  .start-btn{width:100%;background:#80DEEA;color:#0A0A0F;border:none;border-radius:16px;padding:18px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em;cursor:pointer;box-shadow:0 8px 32px rgba(128,222,234,0.3);transition:transform .1s}
+  .start-btn:active{transform:scale(.97)}
+  .best-score{text-align:center;font-size:11px;color:#8888AA;margin-top:8px}
 
-  .crz-card {
-    background: #1E1E2E;
-    border-radius: 24px;
-    padding: 32px 24px 28px;
-    width: 100%; max-width: 420px;
-    position: relative; z-index: 1;
-    border: 1px solid rgba(255,255,255,0.07);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    animation: fadeUp .3s ease-out;
-  }
+  /* TOPBAR */
+  .topbar{padding:14px 20px 8px;display:flex;align-items:center;justify-content:space-between}
+  .logo-s{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.1em}
+  .logo-s span{color:#80DEEA}
+  .score-pill{background:rgba(255,255,255,0.08);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .streak-n{color:#FF6B35;font-weight:800;font-size:13px}
 
-  .crz-logo {
-    font-family: 'Arial Black', Arial, sans-serif;
-    font-size: 20px; font-weight: 900;
-    letter-spacing: .07em; text-align: center;
-    margin-bottom: 3px;
-  }
-  .crz-logo span { color: #80DEEA; }
-  .crz-tagline {
-    text-align: center; color: #8888AA;
-    font-size: 11px; letter-spacing: .12em;
-    text-transform: uppercase; margin-bottom: 28px;
-  }
+  /* PROGRESS */
+  .prog{padding:0 20px 10px}
+  .prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:#8888AA;margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase}
+  .prog-track{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:7px}
+  .prog-fill{height:100%;background:linear-gradient(90deg,#80DEEA,#C084FC);transition:width .6s ease}
+  .pips{display:flex;gap:3px}
+  .pip{flex:1;height:4px;border-radius:2px;transition:background .4s}
 
-  .crz-h1 {
-    font-family: 'Arial Black', Arial, sans-serif;
-    font-weight: 900; font-size: 24px;
-    line-height: 1.15; margin-bottom: 8px;
-  }
-  .crz-sub { color: #8888AA; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+  /* VIDEO */
+  .vid{margin:0 16px;border-radius:18px;overflow:hidden;position:relative;background:#0D0D1A;aspect-ratio:9/14;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.06);max-height:52vh}
+  .vid video{width:100%;height:100%;object-fit:cover;display:block}
+  .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px}
+  .diff-chip{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+  .tension-chip{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;backdrop-filter:blur(4px)}
 
-  .crz-input {
-    width: 100%;
-    background: rgba(255,255,255,0.06);
-    border: 1.5px solid rgba(255,255,255,0.12);
-    border-radius: 12px;
-    padding: 13px 16px; color: #fff;
-    font-size: 16px; font-family: inherit;
-    outline: none; transition: border-color .2s;
-    caret-color: #80DEEA;
-  }
-  .crz-input:focus { border-color: #80DEEA; }
+  /* PLAY */
+  .pbody{padding:14px 20px 18px}
+  .meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .cat-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .adots{display:flex;gap:4px}
+  .adot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.12);transition:background .2s}
+  .adot.used{background:#FF8A65}
+  .wlbl{font-size:10px;color:#8888AA;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+  .wdots{display:flex;gap:4px;margin-bottom:12px}
+  .wdot{width:10px;height:10px;border-radius:50%;border:2px solid #80DEEA}
+  .hint-box{background:rgba(255,138,101,0.08);border:1px solid rgba(255,138,101,0.2);border-radius:10px;padding:8px 12px;font-size:12px;color:#FF8A65;margin-bottom:11px}
+  .irow{display:flex;gap:7px;margin-bottom:7px}
+  .ginput{flex:1;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:12px;padding:13px;color:#fff;font-size:15px;font-family:inherit;outline:none;caret-color:#80DEEA;transition:border-color .2s}
+  .ginput:focus{border-color:#80DEEA}
+  .ginput.shake{animation:shake .3s ease;border-color:#FF8A65}
+  .gbtn{background:#80DEEA;color:#0A0A0F;border:none;border-radius:12px;width:50px;font-size:18px;font-weight:900;cursor:pointer;transition:transform .1s}
+  .gbtn:active{transform:scale(.95)}
+  .gbtn:disabled{opacity:.3;cursor:default}
+  .skip{width:100%;background:transparent;border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:10px;color:#8888AA;font-size:12px;font-family:inherit;cursor:pointer}
 
-  .crz-btn {
-    width: 100%; padding: 14px;
-    border-radius: 12px; border: none;
-    font-family: 'Arial Black', Arial, sans-serif;
-    font-weight: 900; font-size: 14px;
-    letter-spacing: .04em; cursor: pointer;
-    transition: transform .1s, opacity .15s;
-    margin-top: 10px;
-  }
-  .crz-btn:active { transform: scale(.97); }
-  .crz-btn-primary { background: #80DEEA; color: #0A0A0F; }
-  .crz-btn-primary:disabled { opacity: .3; cursor: default; }
-  .crz-btn-ghost {
-    background: transparent;
-    border: 1.5px solid rgba(255,255,255,0.13) !important;
-    color: #8888AA; font-family: 'DM Sans', sans-serif;
-    font-weight: 600; font-size: 13px;
-  }
+  /* ANSWER */
+  .answer-screen{padding:20px}
+  .rlbl{text-align:center;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+  .rlbl.ok{color:#4ADE80}
+  .rlbl.no{color:#FF8A65}
+  .abig{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:.06em;text-align:center;line-height:1;margin-bottom:4px;animation:popIn .3s ease-out}
+  .asub{text-align:center;font-size:12px;color:#8888AA;margin-bottom:14px}
+  .strio{display:flex;gap:8px;margin-bottom:12px}
+  .sbox{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:11px 6px;text-align:center}
+  .snum{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.04em;line-height:1;margin-bottom:1px}
+  .slbl{font-size:9px;color:#8888AA;text-transform:uppercase;letter-spacing:.06em}
+  .streak-banner{background:linear-gradient(135deg,#FF4500,#FF8A65);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:11px;animation:slideDown .3s ease-out}
+  .ego-box{background:rgba(128,222,234,0.07);border:1px solid rgba(128,222,234,0.18);border-radius:10px;padding:9px 14px;text-align:center;font-size:12px;color:#80DEEA;margin-bottom:12px}
+  .next-big{width:100%;background:#80DEEA;color:#0A0A0F;border:none;border-radius:14px;padding:16px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;cursor:pointer;animation:pulseCTA 1.5s ease-in-out 1s infinite}
+  .next-big:active{transform:scale(.97)}
+  .tease{text-align:center;font-size:11px;color:#8888AA;margin-top:8px}
 
-  .crz-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 11px; border-radius: 20px;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: .1em; text-transform: uppercase;
-    margin-bottom: 16px;
-  }
+  /* MICRO PAUSE */
+  .pause{padding:36px 20px;text-align:center}
+  .pause-frac{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:.04em;line-height:1;background:linear-gradient(135deg,#80DEEA,#C084FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+  .pause-lbl{font-size:11px;color:#8888AA;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px}
+  .pause-streak{display:inline-flex;align-items:center;gap:8px;background:rgba(255,107,53,0.12);border:1px solid rgba(255,107,53,0.3);border-radius:20px;padding:8px 20px;font-size:14px;font-weight:800;color:#FF6B35;margin-bottom:16px}
+  .level-up{background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.3);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:#FACC15}
 
-  .crz-dots { display: flex; gap: 6px; margin: 12px 0 20px; flex-wrap: wrap; }
-  .crz-dot {
-    width: 11px; height: 11px; border-radius: 50%;
-    border: 2px solid #80DEEA; background: transparent;
-    transition: background .2s;
-  }
-  .crz-dot.on { background: #80DEEA; }
+  /* END */
+  .end{padding:28px 20px 24px;text-align:center}
+  .etrophy{font-size:54px;margin-bottom:6px;animation:float 3s ease-in-out infinite}
+  .etitle{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.08em;margin-bottom:4px}
+  .erank{display:inline-block;background:linear-gradient(135deg,#FACC15,#FF8A65);color:#0A0A0F;padding:5px 18px;border-radius:20px;font-size:12px;font-weight:800;letter-spacing:.08em;margin-bottom:20px}
+  .egrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+  .ebox{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px 8px}
+  .en{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em;line-height:1;margin-bottom:2px}
+  .el{font-size:9px;color:#8888AA;text-transform:uppercase;letter-spacing:.07em}
+  .play-again{width:100%;background:#80DEEA;color:#0A0A0F;border:none;border-radius:14px;padding:16px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;cursor:pointer;margin-bottom:9px;display:block;text-align:center}
+  .share-btn{width:100%;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:13px;color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:14px}
+  .comeback{background:rgba(128,222,234,0.07);border:1px solid rgba(128,222,234,0.18);border-radius:12px;padding:12px 16px;font-size:12px;color:#80DEEA}
 
-  .crz-hint {
-    background: rgba(128,222,234,0.07);
-    border: 1px solid rgba(128,222,234,0.2);
-    border-radius: 10px; padding: 10px 13px;
-    font-size: 13px; color: #80DEEA;
-    margin-bottom: 16px; line-height: 1.5;
-  }
-  .crz-wrong {
-    display: inline-block;
-    background: rgba(255,138,101,0.12);
-    border: 1px solid rgba(255,138,101,0.3);
-    border-radius: 20px; padding: 2px 11px;
-    font-size: 12px; color: #FF8A65;
-    margin: 3px 3px 3px 0;
-  }
-
-  .crz-video {
-    width: 100%; aspect-ratio: 9/16;
-    border-radius: 14px; overflow: hidden;
-    background: #111122; margin-bottom: 16px;
-    border: 1px solid rgba(255,255,255,0.06);
-  }
-  .crz-video iframe { width: 100%; height: 100%; border: none; display: block; }
-  .crz-vph {
-    width: 100%; height: 100%;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 8px; color: #8888AA; font-size: 12px;
-  }
-
-  .crz-stat-row { display: flex; gap: 10px; margin-bottom: 20px; }
-  .crz-stat {
-    flex: 1;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px; padding: 14px 10px; text-align: center;
-  }
-  .crz-stat-n {
-    font-family: 'Arial Black', Arial, sans-serif;
-    font-size: 26px; font-weight: 900; line-height: 1; margin-bottom: 3px;
-  }
-  .crz-stat-l { font-size: 10px; color: #8888AA; letter-spacing: .08em; text-transform: uppercase; }
-
-  .crz-next {
-    background: rgba(255,138,101,0.08);
-    border: 1px solid rgba(255,138,101,0.2);
-    border-radius: 12px; padding: 14px 16px;
-    display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
-  }
-  .crz-next-date {
-    font-family: 'Arial Black', Arial, sans-serif;
-    font-weight: 900; font-size: 14px; color: #FF8A65;
-  }
-
-  .crz-reveal-ans {
-    font-family: 'Arial Black', Arial, sans-serif;
-    font-size: 30px; font-weight: 900;
-    text-align: center; padding: 20px 0 6px; line-height: 1.1;
-  }
-  .crz-ok  { text-align: center; color: #4ADE80; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 3px; }
-  .crz-err { text-align: center; color: #FF8A65; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 3px; }
-
-  .crz-div { height: 1px; background: rgba(255,255,255,0.07); margin: 20px 0; }
-
-  /* Install banner */
-  .crz-install {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: #1E1E2E;
-    border-top: 1px solid rgba(128,222,234,0.2);
-    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
-    display: flex; align-items: center; gap: 12px;
-    z-index: 100; animation: slideUp .3s ease-out;
-  }
-  .crz-install-text { flex: 1; }
-  .crz-install-text strong { display: block; font-size: 13px; margin-bottom: 1px; }
-  .crz-install-text span { font-size: 11px; color: #8888AA; }
-  .crz-install-btn {
-    background: #80DEEA; color: #0A0A0F;
-    border: none; border-radius: 10px;
-    padding: 9px 16px; font-weight: 800;
-    font-size: 13px; cursor: pointer;
-    white-space: nowrap;
-  }
-  .crz-install-x {
-    background: none; border: none; color: #8888AA;
-    font-size: 18px; cursor: pointer; padding: 4px;
-  }
-
-  .crz-already {
-    background: rgba(128,222,234,0.08);
-    border: 1px solid rgba(128,222,234,0.2);
-    border-radius: 10px; padding: 10px 14px;
-    font-size: 13px; color: #80DEEA;
-    text-align: center; margin-bottom: 18px;
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
-  }
-
-  @media (max-width: 400px) {
-    .crz-card { padding: 24px 18px 24px; border-radius: 18px; }
-    .crz-h1 { font-size: 21px; }
-  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes slideDown{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}
+  @keyframes pulseCTA{0%,100%{box-shadow:0 0 0 0 rgba(128,222,234,0.4)}50%{box-shadow:0 0 0 10px rgba(128,222,234,0)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 `;
 
-// ─── LOGO ─────────────────────────────────────────────────────
-function Logo() {
+// ─── COMPONENTS ───────────────────────────────────────────────
+function VideoBlock({ cara }) {
+  const dc = DIFF_COLORS[cara.difficulty] || "#80DEEA";
+  const cc = CAT_COLORS[cara.category] || "#80DEEA";
   return (
-    <>
-      <div className="crz-logo">CARAI<span>DIZ</span> 💎</div>
-      <div className="crz-tagline">watching becomes playing</div>
-    </>
-  );
-}
-
-// ─── WORD DOTS ────────────────────────────────────────────────
-function Dots({ count, filled }) {
-  return (
-    <div className="crz-dots">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className={`crz-dot${filled ? " on" : ""}`} />
-      ))}
+    <div className="vid">
+      {cara.videoUrl
+        ? <video src={cara.videoUrl} autoPlay muted loop playsInline />
+        : <div className="vid-ph"><span style={{ fontSize: 48, opacity: .12 }}>🎬</span><span>Video loading...</span></div>
+      }
+      <div className="diff-chip" style={{ background: `${dc}18`, border: `1px solid ${dc}44`, color: dc }}>{cara.difficulty}</div>
+      <div className="tension-chip">Only {cara.firstGuessRate}% get this 👀</div>
     </div>
   );
 }
 
-// ─── VIDEO ────────────────────────────────────────────────────
-function VideoBlock({ url }) {
+function StartScreen({ onStart }) {
+  const best = loadJSON("crz_best", 0);
   return (
-    <div className="crz-video">
-      {url ? (
-        <iframe src={url} allow="autoplay; fullscreen" allowFullScreen title="Cara" />
-      ) : (
-        <div className="crz-vph">
-          <span style={{ fontSize: 34, opacity: .45 }}>🎬</span>
-          <span>Video coming soon</span>
-          <span style={{ fontSize: 10, opacity: .5, textAlign: "center", padding: "0 16px" }}>
-            Add a TikTok embed URL to show the Cara here
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── INSTALL BANNER ───────────────────────────────────────────
-function InstallBanner({ prompt, onDismiss }) {
-  if (!prompt) return null;
-  function install() {
-    prompt.prompt();
-    prompt.userChoice.then(() => onDismiss());
-  }
-  return (
-    <div className="crz-install">
-      <span style={{ fontSize: 26 }}>💎</span>
-      <div className="crz-install-text">
-        <strong>Add to Home Screen</strong>
-        <span>Play Caraidiz like an app — offline ready</span>
+    <div className="card">
+      <div className="start-bg">
+        <div className="start-glow" />
+        <div className="start-gem">💎</div>
+        <div className="start-logo">CARAIDIZ</div>
+        <div className="start-tag">watching becomes playing</div>
+        <div className="start-badge">🔥 Today's Challenge</div>
+        <div className="start-count" style={{ marginTop: 6 }}>6 Caras to beat</div>
+        {best > 0 && <div style={{ marginTop: 8, fontSize: 11, color: "rgba(128,222,234,0.6)" }}>Your best: {best} pts</div>}
       </div>
-      <button className="crz-install-btn" onClick={install}>Install</button>
-      <button className="crz-install-x" onClick={onDismiss}>✕</button>
+      <div className="start-body">
+        <button className="start-btn" onClick={onStart}>START PLAYING →</button>
+        <div className="best-score">No signup · Free · Installable 📱</div>
+      </div>
     </div>
   );
 }
 
-// ─── SCREEN 1 — NAME ──────────────────────────────────────────
-function ScreenName({ onDone }) {
-  const [val, setVal] = useState("");
-  function submit() {
-    const n = val.trim();
-    if (!n) return;
-    localStorage.setItem(LS_NAME, n);
-    onDone(n);
-  }
-  return (
-    <div className="crz-card">
-      <Logo />
-      <div className="crz-h1">Hey, what's your name?</div>
-      <div className="crz-sub">We'll track your streak and tell you when the next Cara drops. No sign-up needed.</div>
-      <input
-        className="crz-input"
-        placeholder="Your first name"
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        onKeyDown={e => e.key === "Enter" && submit()}
-        autoFocus maxLength={30}
-      />
-      <button className="crz-btn crz-btn-primary" onClick={submit} disabled={!val.trim()}>
-        Let's Play →
-      </button>
-    </div>
-  );
-}
-
-// ─── SCREEN 2 — CARA ──────────────────────────────────────────
-function ScreenCara({ cara, onResult }) {
-  const [guess, setGuess]       = useState("");
-  const [attempts, setAttempts] = useState([]);
-  const [showHint, setShowHint] = useState(false);
+function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts, sessionStart }) {
+  const [guess, setGuess] = useState("");
+  const [shaking, setShaking] = useState(false);
   const ref = useRef(null);
-  const color = CAT_COLORS[cara.category] || "#80DEEA";
+  const cc = CAT_COLORS[cara.category] || "#80DEEA";
+
+  useEffect(() => { setGuess(""); setTimeout(() => ref.current?.focus(), 200); }, [cara.id]);
 
   function submit() {
     if (!guess.trim()) return;
-    const ok = normalize(guess) === normalize(cara.answer);
-    const next = [...attempts, { text: guess.trim(), ok }];
-    setAttempts(next);
-    setGuess("");
-    if (ok) { onResult({ correct: true, score: 100 }); return; }
-    if (next.length >= 2) setShowHint(true);
+    const ok = norm(guess) === norm(cara.answer);
+    const speed = ok && (Date.now() - sessionStart) / 1000 < 5;
+    const na = attempts + 1;
+    setAttempts(na);
+    mp.track("guess_submitted", { cara_id: cara.id, category: cara.category, is_correct: ok, attempt_number: na });
+    if (ok) { onResult({ correct: true, attempts: na, speedBonus: speed }); return; }
+    if (na >= MAX_ATTEMPTS) { onResult({ correct: false, attempts: na, speedBonus: false }); return; }
+    setShaking(true); setGuess("");
+    setTimeout(() => setShaking(false), 400);
     ref.current?.focus();
   }
 
+  return (
+    <div className="pbody">
+      <div className="meta">
+        <div className="cat-tag" style={{ background: `${cc}18`, border: `1px solid ${cc}44`, color: cc }}>● {cara.category}</div>
+        <div className="adots">{Array.from({ length: MAX_ATTEMPTS }).map((_, i) => <div key={i} className={`adot${i < attempts ? " used" : ""}`} />)}</div>
+      </div>
+      <div className="wlbl">{cara.wordCount === 1 ? "1 word" : `${cara.wordCount} words`}</div>
+      <div className="wdots">{Array.from({ length: cara.wordCount }).map((_, i) => <div key={i} className="wdot" />)}</div>
+      {attempts === MAX_ATTEMPTS - 1 && <div className="hint-box">💡 {cara.hint}</div>}
+      <div className="irow">
+        <input ref={ref} className={`ginput${shaking ? " shake" : ""}`} placeholder="Type your guess…" value={guess} onChange={e => setGuess(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} autoFocus />
+        <button className="gbtn" onClick={submit} disabled={!guess.trim()}>→</button>
+      </div>
+      <button className="skip" onClick={onSkip}>Skip — I don't know</button>
+    </div>
+  );
+}
+
+function AnswerScreen({ cara, result, score, streak, totalScore, onContinue, isLast }) {
+  const [s1, setS1] = useState(false);
+  const [s2, setS2] = useState(false);
+  const [s3, setS3] = useState(false);
+  const [s4, setS4] = useState(false);
+
   useEffect(() => {
-    setGuess(""); setAttempts([]); setShowHint(false);
-    setTimeout(() => ref.current?.focus(), 250);
-  }, [cara]);
+    setTimeout(() => setS1(true), 300);
+    setTimeout(() => setS2(true), 600);
+    setTimeout(() => setS3(true), 900);
+    setTimeout(() => setS4(true), 1200);
+  }, []);
+
+  const nextIdx = CARAS.findIndex(c => c.id === cara.id) + 1;
+  const nextDiff = CARAS[nextIdx]?.difficulty;
+  const label = isLast ? "SEE MY RESULTS 🏆"
+    : result.correct && streak >= 3 ? "KEEP THE STREAK 🔥→"
+    : !result.correct ? "REDEMPTION ROUND →"
+    : "NEXT CHALLENGE 🔥";
+  const tease = isLast ? ""
+    : nextDiff === "hard" ? "⚠️ Next one is harder — ready?"
+    : nextDiff === "expert" ? "🔥 EXPERT LEVEL — final Cara"
+    : "💎 Next Cara loading...";
 
   return (
-    <div className="crz-card">
-      <Logo />
-      <div className="crz-badge" style={{ background: `${color}18`, border: `1px solid ${color}44`, color }}>
-        ● {cara.category}
-      </div>
-      <VideoBlock url={cara.videoUrl} />
-      <div style={{ color: "#8888AA", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 4 }}>
-        {cara.wordCount === 1 ? "1 word" : `${cara.wordCount} words`}
-      </div>
-      <Dots count={cara.wordCount} filled={false} />
-      {showHint && <div className="crz-hint">💡 {cara.hint}</div>}
-      {attempts.map((a, i) => <span key={i} className="crz-wrong">✗ {a.text}</span>)}
-      <input
-        ref={ref}
-        className="crz-input"
-        style={{ marginTop: attempts.length ? 12 : 0 }}
-        placeholder="Type your guess…"
-        value={guess}
-        onChange={e => setGuess(e.target.value)}
-        onKeyDown={e => e.key === "Enter" && submit()}
-        autoFocus
-      />
-      <button className="crz-btn crz-btn-primary" onClick={submit} disabled={!guess.trim()}>
-        Submit Guess
-      </button>
-      <button className="crz-btn crz-btn-ghost" style={{ marginTop: 8 }} onClick={() => onResult({ correct: false, score: 0 })}>
-        Skip — I don't know this one
-      </button>
+    <div className="answer-screen">
+      <div className={`rlbl ${result.correct ? "ok" : "no"}`}>{result.correct ? "🎉 CORRECT!" : "😅 The answer was..."}</div>
+      <div className="abig">{cara.answer}</div>
+      <div className="asub">{result.correct ? (result.speedBonus ? "⚡ Speed bonus! Under 5 seconds" : `Got it in ${result.attempts} ${result.attempts === 1 ? "try" : "tries"}`) : "Most players miss this one"}</div>
+      {s1 && <div className="strio" style={{ animation: "countUp .4s ease-out" }}>
+        <div className="sbox"><div className="snum" style={{ color: result.correct ? "#4ADE80" : "#FF8A65" }}>+{score}</div><div className="slbl">Points</div></div>
+        <div className="sbox"><div className="snum" style={{ color: "#80DEEA" }}>{totalScore}</div><div className="slbl">Total</div></div>
+        <div className="sbox"><div className="snum" style={{ color: "#FF6B35" }}>{streak}</div><div className="slbl">🔥 Streak</div></div>
+      </div>}
+      {s2 && streak >= 3 && <div className="streak-banner"><span style={{ fontSize: 24 }}>🔥</span><div><div style={{ fontWeight: 800, fontSize: 14 }}>{streak} in a row!</div><div style={{ fontSize: 11, opacity: .85 }}>You're on fire — don't stop now</div></div></div>}
+      {s3 && <div className="ego-box">{cara.egoLine}</div>}
+      {s4 && <><button className="next-big" onClick={onContinue}>{label}</button>{tease && <div className="tease">{tease}</div>}</>}
     </div>
   );
 }
 
-// ─── SCREEN 3 — REVEAL ────────────────────────────────────────
-function ScreenReveal({ cara, result, onNext }) {
-  const color = CAT_COLORS[cara.category] || "#80DEEA";
+function MicroPause({ index, total, streak, correct, onNext }) {
+  useEffect(() => { const t = setTimeout(onNext, 1200); return () => clearTimeout(t); }, []);
   return (
-    <div className="crz-card">
-      <Logo />
-      {result.correct
-        ? <div className="crz-ok">🎉 Correct!</div>
-        : <div className="crz-err">Not quite…</div>
-      }
-      <div className="crz-reveal-ans">{cara.answer}</div>
-      <div className="crz-badge" style={{ background: `${color}18`, border: `1px solid ${color}44`, color, marginTop: 10, marginBottom: 16 }}>
-        ● {cara.category}
-      </div>
-      <Dots count={cara.wordCount} filled={true} />
-      <div className="crz-hint">💡 {cara.hint}</div>
-      <div className="crz-div" />
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 11, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 5 }}>Today's score</div>
-        <div style={{ fontFamily: "'Arial Black', Arial", fontWeight: 900, fontSize: 44, color: result.correct ? "#4ADE80" : "#FF8A65" }}>
-          {result.score}
-        </div>
-        <div style={{ fontSize: 11, color: "#8888AA" }}>/ 100</div>
-      </div>
-      <button className="crz-btn crz-btn-primary" onClick={onNext}>See My Stats →</button>
+    <div className="pause">
+      <div className="pause-frac">{correct}/{total}</div>
+      <div className="pause-lbl">Caras completed</div>
+      {streak >= 2 && <div className="pause-streak"><span>🔥</span><span>Streak: {streak}</span></div>}
+      {index === 3 && <div className="level-up">🔥 You're doing better than 80% of players</div>}
+      <div style={{ fontSize: 11, color: "#8888AA", marginTop: 10 }}>Next Cara loading...</div>
     </div>
   );
 }
 
-// ─── SCREEN 4 — STATS ─────────────────────────────────────────
-function ScreenStats({ userName, streak, todayScore, alreadyPlayed }) {
+function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) {
   const [copied, setCopied] = useState(false);
-  const scores    = loadJSON(LS_SCORES, {});
-  const allScores = Object.values(scores);
-  const avg       = allScores.length ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
+  const pct = Math.round(correct / CARAS.length * 100);
+  const rank = pct >= 80 ? "TOP 5% 🏆" : pct >= 60 ? "TOP 20% ⭐" : pct >= 40 ? "TOP 50%" : "KEEP GOING 💪";
+  const timeSpent = Math.round((Date.now() - sessionStart) / 1000);
 
-  function copy() {
-    const msg = `💎 CARAIDIZ Daily Cara\nCan you guess today's Cara?\nhttps://caraidiz.com\n\n${userName}'s streak: ${streak} 🔥`;
-    navigator.clipboard.writeText(msg).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
+  useEffect(() => {
+    const prev = loadJSON("crz_best", 0);
+    if (totalScore > prev) saveJSON("crz_best", totalScore);
+    mp.track("session_complete", {
+      total_score: totalScore, correct_count: correct,
+      caras_played: CARAS.length, best_streak: bestStreak,
+      time_spent_seconds: timeSpent, accuracy_pct: pct
+    });
+    const sessions = loadJSON("crz_sessions", []);
+    sessions.push({ date: new Date().toISOString(), score: totalScore, correct, streak: bestStreak, time: timeSpent });
+    saveJSON("crz_sessions", sessions.slice(-100));
+  }, []);
+
+  function share() {
+    navigator.clipboard.writeText(`💎 CARAIDIZ\nI scored ${totalScore} pts · ${correct}/6 correct\n${rank}\nCan you beat me?\ncaraidiz-pwa.vercel.app`).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   }
 
   return (
-    <div className="crz-card">
-      <Logo />
-      {alreadyPlayed && (
-        <div className="crz-already">✓ Already played today — come back tomorrow!</div>
-      )}
-      <div className="crz-h1">{userName ? `${userName}'s stats` : "Your stats"}</div>
-      <div className="crz-stat-row" style={{ marginTop: 16 }}>
-        <div className="crz-stat">
-          <div className="crz-stat-n" style={{ color: "#FF8A65" }}>{streak}</div>
-          <div className="crz-stat-l">🔥 Streak</div>
-        </div>
-        <div className="crz-stat">
-          <div className="crz-stat-n" style={{ color: "#80DEEA" }}>{todayScore ?? "—"}</div>
-          <div className="crz-stat-l">Today</div>
-        </div>
-        <div className="crz-stat">
-          <div className="crz-stat-n">{allScores.length}</div>
-          <div className="crz-stat-l">Played</div>
-        </div>
+    <div className="end">
+      <div className="etrophy">{pct >= 80 ? "🏆" : pct >= 60 ? "⭐" : "💎"}</div>
+      <div className="etitle">YOU FINISHED 🔥</div>
+      <div className="erank">{rank}</div>
+      <div className="egrid">
+        <div className="ebox"><div className="en" style={{ color: "#80DEEA" }}>{totalScore}</div><div className="el">Points</div></div>
+        <div className="ebox"><div className="en" style={{ color: "#4ADE80" }}>{correct}/6</div><div className="el">Correct</div></div>
+        <div className="ebox"><div className="en" style={{ color: "#FF6B35" }}>{bestStreak}</div><div className="el">Best streak</div></div>
+        <div className="ebox"><div className="en" style={{ color: "#FACC15" }}>{pct}%</div><div className="el">Accuracy</div></div>
       </div>
-      {allScores.length > 1 && (
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "11px 14px", display: "flex", justifyContent: "space-between", marginBottom: 18, fontSize: 13 }}>
-          <span style={{ color: "#8888AA" }}>Average score</span>
-          <span style={{ fontFamily: "'Arial Black', Arial", fontWeight: 900 }}>{avg} / 100</span>
-        </div>
-      )}
-      <div className="crz-next">
-        <span style={{ fontSize: 22 }}>🗓</span>
-        <div>
-          <div style={{ fontSize: 10, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 2 }}>Next Cara drops</div>
-          <div className="crz-next-date">{tomorrowLabel()}</div>
-        </div>
-      </div>
-      <button className="crz-btn crz-btn-primary" onClick={copy}>Copy Challenge Link 📋</button>
-      <div style={{ textAlign: "center", fontSize: 12, color: "#4ADE80", marginTop: 8, minHeight: 18 }}>
-        {copied ? "✓ Copied!" : ""}
-      </div>
+      <button className="play-again" onClick={onReplay}>PLAY AGAIN 💎</button>
+      <button className="share-btn" onClick={share}>{copied ? "✓ Copied!" : "📋 Share my score"}</button>
+      <div className="comeback">🗓 New Caras drop daily — come back tomorrow! 💎</div>
     </div>
   );
 }
 
 // ─── ROOT ─────────────────────────────────────────────────────
 export default function App() {
-  const cara  = CARAS[getDailyIndex()];
-  const today = todayStr();
+  const [phase,       setPhase]       = useState("start");
+  const [index,       setIndex]       = useState(0);
+  const [attempts,    setAttempts]    = useState(0);
+  const [result,      setResult]      = useState(null);
+  const [score,       setScore]       = useState(0);
+  const [total,       setTotal]       = useState(0);
+  const [streak,      setStreak]      = useState(0);
+  const [best,        setBest]        = useState(0);
+  const [correct,     setCorrect]     = useState(0);
+  const [sessionStart, setSessionStart] = useState(Date.now());
 
-  function initialScreen() {
-    const name = localStorage.getItem(LS_NAME);
-    if (!name) return "name";
-    if (localStorage.getItem(LS_LAST) === today) return "stats";
-    return "cara";
+  useEffect(() => { mp.init(); }, []);
+
+  const cara   = CARAS[index];
+  const isLast = index === CARAS.length - 1;
+
+  function start() {
+    setSessionStart(Date.now());
+    mp.track("session_start", { caras_count: CARAS.length });
+    setPhase("play");
   }
 
-  const [screen,     setScreen]     = useState(initialScreen);
-  const [userName,   setUserName]   = useState(localStorage.getItem(LS_NAME) || "");
-  const [streak,     setStreak]     = useState(() => loadJSON(LS_STREAK, 0));
-  const [result,     setResult]     = useState(null);
-  const [todayScore, setTodayScore] = useState(() => loadJSON(LS_SCORES, {})[today] ?? null);
-
-  // PWA install prompt
-  const [installPrompt, setInstallPrompt] = useState(null);
-  const [showInstall,   setShowInstall]   = useState(false);
-
-  useEffect(() => {
-    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); setShowInstall(true); };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
-
-  function computeStreak() {
-    const last = localStorage.getItem(LS_LAST);
-    const yest = new Date(); yest.setDate(yest.getDate() - 1);
-    const yStr = yest.toISOString().slice(0, 10);
-    if (!last)       return 1;
-    if (last === yStr) return (loadJSON(LS_STREAK, 0) || 0) + 1;
-    if (last === today) return loadJSON(LS_STREAK, 1);
-    return 1;
+  function handleResult(res) {
+    const ns  = res.correct ? streak + 1 : 0;
+    const pts = res.correct ? scoreFor(res.attempts, ns, res.speedBonus) : 0;
+    setStreak(ns); setBest(b => Math.max(b, ns));
+    setScore(pts); setTotal(t => t + pts);
+    if (res.correct) setCorrect(c => c + 1);
+    setResult(res);
+    mp.track("video_watched", { cara_id: cara.id, category: cara.category, difficulty: cara.difficulty, correct: res.correct });
+    setPhase("answer");
   }
 
-  function handleName(name) { setUserName(name); setScreen("cara"); }
-  function handleResult(res) { setResult(res); setScreen("reveal"); }
-
-  function handleNext() {
-    const s = computeStreak();
-    setStreak(s); saveJSON(LS_STREAK, s);
-    const scores = loadJSON(LS_SCORES, {});
-    scores[today] = result.score;
-    saveJSON(LS_SCORES, scores);
-    localStorage.setItem(LS_LAST, today);
-    setTodayScore(result.score);
-    setScreen("stats");
+  function handleSkip() {
+    setStreak(0); setScore(0);
+    setResult({ correct: false, attempts: 0, speedBonus: false });
+    mp.track("video_skipped", { cara_id: cara.id });
+    setPhase("answer");
   }
 
-  const alreadyPlayed = localStorage.getItem(LS_LAST) === today && screen === "stats" && result === null;
+  function handleContinue() {
+    if (isLast) { setPhase("end"); return; }
+    const shouldPause = (index + 1) % 2 === 0;
+    if (shouldPause) { setPhase("pause"); }
+    else { advanceNext(); }
+  }
+
+  function advanceNext() {
+    setIndex(i => i + 1);
+    setAttempts(0);
+    setPhase("play");
+  }
+
+  function handleReplay() {
+    setIndex(0); setPhase("start"); setAttempts(0);
+    setScore(0); setTotal(0); setStreak(0); setCorrect(0);
+  }
+
+  const showTop  = phase === "play" || phase === "answer";
+  const showProg = phase === "play" || phase === "answer";
+  const showVid  = phase === "play" || phase === "answer";
 
   return (
     <>
       <style>{G}</style>
-      <div className="crz-root">
-        {screen === "name"   && <ScreenName onDone={handleName} />}
-        {screen === "cara"   && <ScreenCara cara={cara} onResult={handleResult} />}
-        {screen === "reveal" && result && <ScreenReveal cara={cara} result={result} onNext={handleNext} />}
-        {screen === "stats"  && <ScreenStats userName={userName} streak={streak} todayScore={todayScore} alreadyPlayed={alreadyPlayed} />}
+      <div className="app">
+        {phase === "start" && <StartScreen onStart={start} />}
+
+        {phase !== "start" && phase !== "end" && (
+          <div className="card">
+            {showTop && (
+              <div className="topbar">
+                <div className="logo-s">CARAI<span>DIZ</span> 💎</div>
+                <div className="score-pill">
+                  {streak >= 2 && <span className="streak-n">🔥 {streak}</span>}
+                  <span>{total} pts</span>
+                </div>
+              </div>
+            )}
+            {showProg && (
+              <div className="prog">
+                <div className="prog-lbl"><span>Cara {index + 1} of {CARAS.length}</span><span>{Math.round(index / CARAS.length * 100)}% done</span></div>
+                <div className="prog-track"><div className="prog-fill" style={{ width: `${index / CARAS.length * 100}%` }} /></div>
+                <div className="pips">{CARAS.map((_, i) => (
+                  <div key={i} className="pip" style={{ background: i < index ? "#80DEEA" : i === index ? "rgba(128,222,234,0.4)" : "rgba(255,255,255,0.08)" }} />
+                ))}</div>
+              </div>
+            )}
+            {showVid && <VideoBlock cara={cara} />}
+            {phase === "play" && <PlayScreen cara={cara} onResult={handleResult} onSkip={handleSkip} attempts={attempts} setAttempts={setAttempts} sessionStart={sessionStart} />}
+            {phase === "answer" && result && <AnswerScreen cara={cara} result={result} score={score} streak={streak} totalScore={total} onContinue={handleContinue} isLast={isLast} />}
+            {phase === "pause" && <MicroPause index={index + 1} total={CARAS.length} streak={streak} correct={correct} onNext={advanceNext} />}
+          </div>
+        )}
+
+        {phase === "end" && (
+          <div className="card">
+            <EndScreen totalScore={total} correct={correct} bestStreak={best} sessionStart={sessionStart} onReplay={handleReplay} />
+          </div>
+        )}
       </div>
-      <InstallBanner
-        prompt={installPrompt}
-        onDismiss={() => setShowInstall(false)}
-      />
     </>
   );
 }
