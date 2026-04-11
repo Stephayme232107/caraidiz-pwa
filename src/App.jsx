@@ -46,6 +46,62 @@ function scoreFor(attempt, streak, speed) {
   return base + (streak>=3?50:0) + (speed?25:0);
 }
 
+
+// ─── LETTER SHUFFLE ───────────────────────────────────────────
+const DISTRACTORS = "BCDFGHJKLMNPQRSTVWXYZ";
+
+function fisherYates(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function hasConsecutiveRun(tiles, answer, minRun = 3) {
+  const clean   = answer.toUpperCase().replace(/[^A-Z]/g, "");
+  const letters = tiles.map(t => t.letter);
+  if (clean.length < minRun) return false;
+  for (let start = 0; start <= clean.length - minRun; start++) {
+    const run = clean.slice(start, start + minRun).split("");
+    let runIdx = 0;
+    for (let i = 0; i < letters.length && runIdx < run.length; i++) {
+      if (letters[i] === run[runIdx]) runIdx++;
+    }
+    if (runIdx === run.length) return true;
+  }
+  return false;
+}
+
+function buildLetterTiles(answer) {
+  const clean         = answer.toUpperCase().replace(/[^A-Z ]/g, "");
+  const answerLetters = clean.replace(/ /g, "").split("");
+  const uniqueAnswer  = [...new Set(answerLetters)];
+
+  // Add distractors not already in answer
+  const pool        = DISTRACTORS.split("").filter(c => !uniqueAnswer.includes(c));
+  const distractors = fisherYates(pool).slice(0, Math.min(5, pool.length));
+
+  // Combine answer letters + distractors
+  const allLetters = [
+    ...answerLetters.map(l => ({ letter: l, isAnswer: true })),
+    ...distractors.map(l => ({ letter: l, isAnswer: false })),
+  ];
+
+  // Shuffle up to 50 times to avoid consecutive runs of 3+
+  // For very long answers (>10 letters) relax to runs of 4+
+  const minRun = answerLetters.length > 10 ? 4 : 3;
+  let tiles;
+  let attempts = 0;
+  do {
+    tiles = fisherYates(allLetters).map((t, i) => ({ ...t, id: i }));
+    attempts++;
+  } while (attempts < 50 && hasConsecutiveRun(tiles, answer, minRun));
+
+  return tiles;
+}
+
 // ─── DYNAMIC COMMENTS ─────────────────────────────────────────
 const CARA_FLAVOR = {
   1: { correct:"THRILLER omg i screamed 🕺", wrong:"😭 I said beat it wtf" },
@@ -136,6 +192,28 @@ const G = `
   .mini-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.25);z-index:5}
 
 
+
+  /* LETTER TILE GAME */
+  .answer-slots{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:10px 16px 6px;min-height:44px}
+  .slot{width:32px;height:36px;border-radius:8px;border:2px solid rgba(128,222,234,0.35);background:rgba(128,222,234,0.05);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:#80DEEA;cursor:pointer;transition:all .15s;position:relative}
+  .slot.filled{background:rgba(128,222,234,0.15);border-color:#80DEEA;color:#fff;animation:slotPop .15s ease-out}
+  .slot.space{width:10px;border:none;background:transparent;cursor:default}
+  .slot.correct{background:rgba(74,222,128,0.2);border-color:#4ADE80;color:#4ADE80}
+  .slot.wrong{background:rgba(255,138,101,0.2);border-color:#FF8A65;color:#FF8A65;animation:shake .3s ease}
+  @keyframes slotPop{0%{transform:scale(.8)}100%{transform:scale(1)}}
+
+  .tile-grid-wrap{padding:6px 12px 10px}
+  .tile-grid{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px}
+  .tile{width:36px;height:40px;border-radius:10px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;cursor:pointer;transition:all .12s;user-select:none;-webkit-user-select:none}
+  .tile:active{transform:scale(.88)}
+  .tile.used{opacity:0.2;pointer-events:none;background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.06)}
+  .tile.distractor{border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7)}
+  .tile-actions{display:flex;gap:8px;justify-content:center}
+  .tile-action{height:36px;padding:0 16px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .12s}
+  .tile-action:active{transform:scale(.95)}
+  .tile-action.delete{border-color:rgba(255,138,101,0.3);color:#FF8A65;background:rgba(255,138,101,0.08)}
+  .tile-action.skip-tile{border-color:rgba(255,255,255,0.1);color:#8888AA;font-size:12px}
+  .word-sep{width:8px;height:36px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.2);font-size:12px;cursor:default}
   /* TIMER */
   .timer-wrap{padding:6px 16px 2px}
   .timer-lbl{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px}
@@ -217,7 +295,7 @@ const G = `
 `;
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, mini=false }) {
+function VideoBlock({ cara }) {
   const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
   const cc    = CAT_COLORS[cara.category] || "#80DEEA";
@@ -235,12 +313,12 @@ function VideoBlock({ cara, mini=false }) {
   }
 
   return (
-    <div className={mini ? "vid-mini" : "vid-full"}>
+    <div className="vid-full">
       {cara.videoUrl
         ? <video ref={videoRef} src={cara.videoUrl} autoPlay muted loop playsInline />
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
-      {mini && <div className="mini-overlay"/>}
+
       <div className="cat-badge-overlay">
         <div className="cat-pill" style={{ background:"rgba(0,0,0,0.65)", border:`1px solid ${cc}44`, color:cc }}>
           <span style={{fontSize:11}}>{emoji}</span>
@@ -308,65 +386,168 @@ function StartScreen({ onStart }) {
 }
 
 // ─── PLAY SCREEN ──────────────────────────────────────────────
-function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts, onFocusChange }) {
-  const [guess,    setGuess]    = useState("");
-  const [shaking,  setShaking]  = useState(false);
-  const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
-  const [focused,  setFocused]  = useState(false);
-  const ref = useRef(null);
-  const cc  = CAT_COLORS[cara.category] || "#80DEEA";
+function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts }) {
+  const answer      = cara.answer.toUpperCase();
+  const answerClean = answer.replace(/[^A-Z ]/g,"");
+  const words       = answerClean.split(" ");
+  const totalLetters= answerClean.replace(/ /g,"").length;
 
-  function handleFocus()  { setFocused(true);  onFocusChange?.(true); }
-  function handleBlur()   { setFocused(false); onFocusChange?.(false); }
+  const [tiles,     setTiles]     = useState(()=> buildLetterTiles(cara.answer));
+  const [selected,  setSelected]  = useState([]); // [{tileId, letter}]
+  const [slotState, setSlotState] = useState(null); // null | "correct" | "wrong"
+  const [timeLeft,  setTimeLeft]  = useState(TIMER_DURATION);
+  const [showHint,  setShowHint]  = useState(false);
 
-  useEffect(() => { setGuess(""); setTimeLeft(TIMER_DURATION); setTimeout(() => ref.current?.focus(), 200); }, [cara.id]);
-
+  // Reset on new cara
   useEffect(() => {
-    if (timeLeft <= 0) { mp.track("timer_expired",{cara_id:cara.id}); onResult({correct:false,attempts:attempts||1,speedBonus:false,timedOut:true,timeLeft:0,lastGuess:null}); return; }
-    const t = setTimeout(() => setTimeLeft(s => s-1), 1000);
-    return () => clearTimeout(t);
-  }, [timeLeft]);
+    setTiles(buildLetterTiles(cara.answer));
+    setSelected([]);
+    setSlotState(null);
+    setShowHint(false);
+    setTimeLeft(TIMER_DURATION);
+  }, [cara.id]);
 
-  const pct     = (timeLeft/TIMER_DURATION)*100;
-  const tColor  = timeLeft>15?"#80DEEA":timeLeft>8?"#FACC15":"#FF8A65";
-  const urgent  = timeLeft<=8;
+  // Timer countdown
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      mp.track("timer_expired",{cara_id:cara.id});
+      onResult({correct:false,attempts:attempts||1,speedBonus:false,timedOut:true,timeLeft:0,lastGuess:selected.map(s=>s.letter).join("")});
+      return;
+    }
+    const t = setTimeout(()=>setTimeLeft(s=>s-1),1000);
+    return ()=>clearTimeout(t);
+  },[timeLeft]);
 
-  function submit() {
-    if (!guess.trim()) return;
-    const ok    = norm(guess)===norm(cara.answer);
-    const speed = ok && timeLeft > 20;
-    const na    = attempts+1;
-    setAttempts(na);
-    mp.track("guess_submitted",{cara_id:cara.id,category:cara.category,is_correct:ok,attempt_number:na,time_left:timeLeft});
-    if (ok)           { onResult({correct:true,  attempts:na,speedBonus:speed,timeLeft,lastGuess:guess.trim()}); return; }
-    if (na>=MAX_ATTEMPTS) { onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess.trim()}); return; }
-    setShaking(true); setGuess("");
-    setTimeout(()=>setShaking(false),400);
-    ref.current?.focus();
+  // Show hint after 2 wrong attempts
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
+
+  function tapTile(tile) {
+    if (tile.used || selected.length >= totalLetters) return;
+    const newSelected = [...selected, {tileId:tile.id, letter:tile.letter}];
+    setSelected(newSelected);
+    setTiles(prev=>prev.map(t=>t.id===tile.id?{...t,used:true}:t));
+
+    // Auto-check when all slots filled
+    if (newSelected.length === totalLetters) {
+      checkAnswer(newSelected);
+    }
   }
+
+  function tapSlot(idx) {
+    if (idx >= selected.length) return;
+    const removed = selected[idx];
+    const newSelected = selected.filter((_,i)=>i!==idx);
+    setSelected(newSelected);
+    setTiles(prev=>prev.map(t=>t.id===removed.tileId?{...t,used:false}:t));
+    setSlotState(null);
+  }
+
+  function deleteLast() {
+    if (selected.length === 0) return;
+    const removed = selected[selected.length-1];
+    setSelected(prev=>prev.slice(0,-1));
+    setTiles(prev=>prev.map(t=>t.id===removed.tileId?{...t,used:false}:t));
+    setSlotState(null);
+  }
+
+  function reshuffle() {
+    // Unuse all selected tiles and reshuffle grid
+    setSelected([]);
+    setTiles(buildLetterTiles(cara.answer));
+    setSlotState(null);
+  }
+
+  function checkAnswer(sel) {
+    const guess   = sel.map(s=>s.letter).join("").toLowerCase().replace(/ /g,"");
+    const ok      = norm(guess) === norm(cara.answer);
+    const speed   = ok && timeLeft > 20;
+    const na      = attempts+1;
+    setAttempts(na);
+    setSlotState(ok?"correct":"wrong");
+    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
+
+    if (ok) {
+      setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:sel.map(s=>s.letter).join("")}),500);
+    } else if (na>=MAX_ATTEMPTS) {
+      setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:sel.map(s=>s.letter).join("")}),600);
+    } else {
+      // Wrong but can retry — reset after brief flash
+      setTimeout(()=>{
+        setSelected([]);
+        setTiles(buildLetterTiles(cara.answer));
+        setSlotState(null);
+      },700);
+    }
+  }
+
+  // Build slot display: split by words
+  const pct    = (timeLeft/TIMER_DURATION)*100;
+  const tColor = timeLeft>15?"#80DEEA":timeLeft>8?"#FACC15":"#FF8A65";
+  const urgent = timeLeft<=8;
+
+  // Map selected to slots per word
+  let selIdx = 0;
+  const wordSlots = words.map(word => {
+    const slots = word.split("").map(letter => {
+      const fill = selected[selIdx] || null;
+      selIdx++;
+      return { expectedLetter:letter, fill, slotIndex: selIdx-1 };
+    });
+    return slots;
+  });
 
   return (
     <>
+      {/* TIMER */}
       <div className="timer-wrap">
         <div className="timer-lbl">
-          <span style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>Time to guess</span>
+          <span style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>
+            {attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:"Time to guess"}
+          </span>
           <span className={`timer-time${urgent?" urgent":""}`} style={{color:tColor}}>{urgent?"⚡ ":""}{timeLeft}s</span>
         </div>
         <div className="timer-track"><div className="timer-fill" style={{width:`${pct}%`,background:tColor}}/></div>
       </div>
-      <div className="pbody">
-        <div className="meta">
-          <div className="cat-tag" style={{background:`${cc}18`,border:`1px solid ${cc}44`,color:cc}}>● {cara.category}</div>
-          <div className="adots">{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} className={`adot${i<attempts?" used":""}`}/>)}</div>
+
+      {/* HINT */}
+      {showHint && <div style={{margin:"4px 16px 0",padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>💡 {cara.hint}</div>}
+
+      {/* ANSWER SLOTS */}
+      <div className="answer-slots">
+        {wordSlots.map((word, wi) => (
+          <div key={wi} style={{display:"flex",alignItems:"center",gap:5,flexWrap:"nowrap"}}>
+            {word.map((slot) => (
+              <div
+                key={slot.slotIndex}
+                className={`slot ${slot.fill?"filled":""} ${slotState&&slot.fill?slotState:""}`}
+                onClick={()=>slot.fill&&tapSlot(slot.slotIndex)}
+              >
+                {slot.fill?slot.fill.letter:""}
+              </div>
+            ))}
+            {wi < wordSlots.length-1 && <div className="word-sep">·</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* TILE GRID */}
+      <div className="tile-grid-wrap">
+        <div className="tile-grid">
+          {tiles.map(tile=>(
+            <div
+              key={tile.id}
+              className={`tile ${tile.used?"used":""} ${!tile.isAnswer?"distractor":""}`}
+              onClick={()=>tapTile(tile)}
+            >
+              {tile.letter}
+            </div>
+          ))}
         </div>
-        <div className="wlbl">{cara.wordCount===1?"1 word":`${cara.wordCount} words`}</div>
-        <div className="wdots">{Array.from({length:cara.wordCount}).map((_,i)=><div key={i} className="wdot"/>)}</div>
-        {attempts===MAX_ATTEMPTS-1&&<div className="hint-box">💡 {cara.hint}</div>}
-        <div className="irow">
-          <input ref={ref} className={`ginput${shaking?" shake":""}`} placeholder="Type your guess…" value={guess} onChange={e=>setGuess(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} onFocus={handleFocus} onBlur={handleBlur} autoFocus/>
-          <button className="gbtn" onClick={submit} disabled={!guess.trim()}>→</button>
+        <div className="tile-actions">
+          <button className="tile-action" onClick={reshuffle}>🔀 Shuffle</button>
+          <button className="tile-action delete" onClick={deleteLast}>⌫ Delete</button>
+          <button className="tile-action skip-tile" onClick={onSkip}>Skip</button>
         </div>
-        <button className="skip" onClick={onSkip}>Skip — I don't know</button>
       </div>
     </>
   );
@@ -516,7 +697,7 @@ export default function App() {
   const [best,         setBest]         = useState(0);
   const [correct,      setCorrect]      = useState(0);
   const [sessionStart, setSessionStart] = useState(Date.now());
-  const [inputFocused, setInputFocused] = useState(false);
+
 
   useEffect(()=>{ mp.init(); },[]);
 
@@ -583,17 +764,15 @@ export default function App() {
             )}
             {showVid&&(
               <>
-                {!inputFocused && (
-                  <div className="hook-wrap">
-                    <div className="hook-main">ONLY {cara.firstGuessRate}% GET THIS 👀</div>
-                    <div className="hook-sub">Can you?</div>
-                  </div>
-                )}
-                <VideoBlock cara={cara} mini={inputFocused}/>
+                <div className="hook-wrap">
+                  <div className="hook-main">ONLY {cara.firstGuessRate}% GET THIS 👀</div>
+                  <div className="hook-sub">Can you?</div>
+                </div>
+                <VideoBlock cara={cara}/>
                 <CommentsBlock caraId={cara.id} revealed={phase==="answer"} result={result}/>
               </>
             )}
-            {phase==="play"&&<PlayScreen cara={cara} onResult={handleResult} onSkip={handleSkip} attempts={attempts} setAttempts={setAttempts} onFocusChange={setInputFocused}/>}
+            {phase==="play"&&<PlayScreen cara={cara} onResult={handleResult} onSkip={handleSkip} attempts={attempts} setAttempts={setAttempts}/>}
             {phase==="answer"&&result&&<AnswerScreen cara={cara} result={result} score={score} streak={streak} totalScore={total} onContinue={handleContinue} isLast={isLast}/>}
             {phase==="pause"&&<MicroPause index={index+1} total={CARAS.length} streak={streak} correct={correct} onNext={advanceNext}/>}
           </div>
