@@ -112,51 +112,64 @@ function scoreFor(attempt, streak, speed) {
 }
 
 
-// ─── FAKE COMMENTS PER CARA ───────────────────────────────────
-const FAKE_COMMENTS = {
-  1: [ // Thriller
-    { avatar: "🧑", text: "bro got it first try thriller 🕺🕺", wrong: false },
-    { avatar: "👩", text: "THRILLER omg i screamed", wrong: false },
-    { avatar: "🧔", text: "wait is it beat it??", wrong: true },
-    { avatar: "💀", text: "thriller no cap easiest one yet", wrong: false },
-    { avatar: "🙋", text: "michael jackson vibes but which song tho", wrong: true },
-  ],
-  2: [ // I break up with you
-    { avatar: "😭", text: "i break up with you LMAOOO the drama", wrong: false },
-    { avatar: "🧑", text: "its giving goodbye?? idk", wrong: true },
-    { avatar: "💔", text: "i break up with you took me 3 tries ngl", wrong: false },
-    { avatar: "👀", text: "wait is it we need to talk", wrong: true },
-    { avatar: "😂", text: "i break up with you bestie said it with her chest", wrong: false },
-  ],
-  3: [ // Revlon
-    { avatar: "💄", text: "REVLON instantly knew from the vibe 💅", wrong: false },
-    { avatar: "🧑", text: "loreal??? maybelline???", wrong: true },
-    { avatar: "👩", text: "revlon she ate this mime fr", wrong: false },
-    { avatar: "✨", text: "charlotte tilbury?? idk beauty brands", wrong: true },
-    { avatar: "💅", text: "revlon first try let's gooo", wrong: false },
-  ],
-  4: [ // JR Ewing
-    { avatar: "🤠", text: "JR EWING DALLAS ERA 🤠🤠", wrong: false },
-    { avatar: "🧑", text: "is this like a cowboy thing??", wrong: true },
-    { avatar: "👩", text: "jr ewing my parents would be proud rn", wrong: false },
-    { avatar: "😅", text: "no idea who this is ngl", wrong: true },
-    { avatar: "📺", text: "JR ewing the villain of villains fr", wrong: false },
-  ],
-  5: [ // Would you marry me
-    { avatar: "💍", text: "WOULD YOU MARRY ME crying rn 😭💍", wrong: false },
-    { avatar: "🧑", text: "will you marry me?? same thing??", wrong: false },
-    { avatar: "😍", text: "she said the words so elegantly omg", wrong: false },
-    { avatar: "🤔", text: "is it like a proposal phrase?", wrong: true },
-    { avatar: "💀", text: "would you marry me got it in 1 tryyyy", wrong: false },
-  ],
-  6: [ // Coldplay Kiss Cam
-    { avatar: "🎸", text: "COLDPLAY KISS CAM iconic moment 🎸😂", wrong: false },
-    { avatar: "🧑", text: "coldplay concert?? something with coldplay", wrong: true },
-    { avatar: "👩", text: "coldplay kiss cam i KNEW it 😭", wrong: false },
-    { avatar: "🎶", text: "the way i got this immediately as a swiftie wait wrong band", wrong: true },
-    { avatar: "💀", text: "coldplay kiss cam hardest one yet but got it", wrong: false },
-  ],
+// ─── DYNAMIC COMMENTS BY PERFORMANCE ─────────────────────────
+const COMMENTS_CORRECT_FAST = [
+  { avatar: "😳", text: "you're fast omg" },
+  { avatar: "🔥", text: "1 try?? crazy" },
+  { avatar: "💀", text: "bro got it instantly 💀" },
+];
+const COMMENTS_CORRECT_NORMAL = [
+  { avatar: "🔥", text: "first try?? insane" },
+  { avatar: "😭", text: "ok genius relax 😭" },
+  { avatar: "💀", text: "bro got it instantly 💀" },
+];
+const COMMENTS_CORRECT_SLOW = [
+  { avatar: "👀", text: "took you long enough 😅" },
+  { avatar: "😅", text: "still got it though 🔥" },
+  { avatar: "🧑", text: "better late than never lol" },
+];
+const COMMENTS_WRONG = [
+  { avatar: "😭", text: "nah this one was easy" },
+  { avatar: "💀", text: "how did I miss that 💀" },
+  { avatar: "😬", text: "most people miss this one" },
+];
+const COMMENTS_TIMEOUT = [
+  { avatar: "⏱", text: "the clock got you 💀" },
+  { avatar: "😅", text: "bro was thinking too hard" },
+  { avatar: "👀", text: "try again you got this" },
+];
+
+// Per-cara flavor comments (shown alongside performance comments)
+const CARA_COMMENTS = {
+  1: { correct: "THRILLER omg i screamed 🕺", wrong: "😭 I said beat it wtf" },
+  2: { correct: "i break up with you LMAOOO 💔", wrong: "wait is it we need to talk??" },
+  3: { correct: "REVLON instantly knew 💅", wrong: "loreal?? maybelline?? 😭" },
+  4: { correct: "JR EWING DALLAS ERA 🤠", wrong: "no idea who this is ngl 😅" },
+  5: { correct: "WOULD YOU MARRY ME crying rn 💍", wrong: "is it a proposal phrase?? idk" },
+  6: { correct: "COLDPLAY KISS CAM iconic 🎸😂", wrong: "coldplay concert?? something with coldplay" },
 };
+
+function getComments(caraId, correct, timedOut, speedBonus, timeLeft) {
+  const flavor = CARA_COMMENTS[caraId];
+  if (timedOut) {
+    return [...COMMENTS_TIMEOUT.slice(0, 2)];
+  }
+  if (correct) {
+    const base = speedBonus || timeLeft > 20
+      ? COMMENTS_CORRECT_FAST
+      : timeLeft > 10
+      ? COMMENTS_CORRECT_NORMAL
+      : COMMENTS_CORRECT_SLOW;
+    return [
+      base[0],
+      { avatar: "🧑", text: flavor?.correct || "got it! 🔥" }
+    ];
+  }
+  return [
+    COMMENTS_WRONG[0],
+    { avatar: "😬", text: flavor?.wrong || "tough one" }
+  ];
+}
 
 // ─── STYLES ───────────────────────────────────────────────────
 const G = `
@@ -301,18 +314,15 @@ const G = `
   .mute-btn{position:absolute;bottom:14px;right:14px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;transition:transform .1s}
   .mute-btn:active{transform:scale(.9)}
   /* COMMENTS */
-  .comments-section{padding:8px 16px 0}
-  .comments-header{font-size:9px;color:#8888AA;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-  .comments-lock{font-size:10px;color:#80DEEA;font-weight:700}
-  .cmt-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  .cmt-avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
-  .cmt-text{font-size:13px;color:rgba(255,255,255,0.75);font-weight:500;transition:filter .5s ease}
-  .cmt-text.blurred{filter:blur(5px);user-select:none;pointer-events:none}
-  .cmt-text.revealed{filter:blur(0);animation:fadeUp .5s ease-out}
-  .cmt-text.wrong-guess{color:#FF8A65}
-  .cmt-text.correct-guess{color:#4ADE80}
-  .guess-to-reveal{text-align:center;font-size:11px;color:#80DEEA;font-weight:700;letter-spacing:.06em;padding:4px 0 8px;animation:pulse2 2s ease-in-out infinite}
-  @keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.5}}
+  .comments-section{padding:6px 16px 4px}
+  .comments-label{font-size:9px;color:#8888AA;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .comments-revealed .cmt-row{animation:cmtSlide .25s ease-out both}
+  @keyframes cmtSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .cmt-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px}
+  .cmt-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .cmt-bubble{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:0 12px 12px 12px;padding:7px 12px;flex:1}
+  .cmt-text{font-size:12px;font-weight:500;color:rgba(255,255,255,0.85);line-height:1.4}
+  .guess-to-reveal{text-align:center;font-size:11px;color:rgba(128,222,234,0.7);font-weight:600;letter-spacing:.04em;padding:2px 0 6px}
 
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
   @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
@@ -440,9 +450,8 @@ function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts, sessionStar
   // Countdown
   useEffect(() => {
     if (timeLeft <= 0) {
-      // Time's up — auto fail
       mp.track("timer_expired", { cara_id: cara.id });
-      onResult({ correct: false, attempts: attempts || 1, speedBonus: false, timedOut: true });
+      onResult({ correct: false, attempts: attempts || 1, speedBonus: false, timedOut: true, timeLeft: 0 });
       return;
     }
     const t = setTimeout(() => setTimeLeft(s => s - 1), 1000);
@@ -460,8 +469,8 @@ function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts, sessionStar
     const na = attempts + 1;
     setAttempts(na);
     mp.track("guess_submitted", { cara_id: cara.id, category: cara.category, is_correct: ok, attempt_number: na, time_left: timeLeft });
-    if (ok) { onResult({ correct: true, attempts: na, speedBonus: speed }); return; }
-    if (na >= MAX_ATTEMPTS) { onResult({ correct: false, attempts: na, speedBonus: false }); return; }
+    if (ok) { onResult({ correct: true, attempts: na, speedBonus: speed, timeLeft, lastGuess: guess.trim() }); return; }
+    if (na >= MAX_ATTEMPTS) { onResult({ correct: false, attempts: na, speedBonus: false, lastGuess: guess.trim() }); return; }
     setShaking(true); setGuess("");
     setTimeout(() => setShaking(false), 400);
     ref.current?.focus();
@@ -524,10 +533,36 @@ function AnswerScreen({ cara, result, score, streak, totalScore, onContinue, isL
     : nextDiff === "expert" ? "🔥 EXPERT LEVEL — final Cara"
     : "💎 Next Cara loading...";
 
+  // Get user's last guess from attempts (passed via result)
+  const userGuess = result.lastGuess || null;
+
   return (
     <div className="answer-screen">
-      <div className={`rlbl ${result.correct ? "ok" : "no"}`}>{result.correct ? "🎉 CORRECT!" : "😅 The answer was..."}</div>
-      <div className="abig">{cara.answer}</div>
+
+      {/* USER ANSWER — what they typed */}
+      {userGuess && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          marginBottom: 10,
+          padding: "8px 14px",
+          background: result.correct ? "rgba(74,222,128,0.08)" : "rgba(255,138,101,0.08)",
+          border: `1px solid ${result.correct ? "rgba(74,222,128,0.25)" : "rgba(255,138,101,0.25)"}`,
+          borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: result.correct ? "#4ADE80" : "#FF8A65", letterSpacing: ".1em", textTransform: "uppercase", flexShrink: 0 }}>YOU:</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: result.correct ? "#4ADE80" : "#FF8A65" }}>{userGuess}</span>
+          <span style={{ marginLeft: "auto", fontSize: 16 }}>{result.correct ? "✅" : "❌"}</span>
+        </div>
+      )}
+
+      {/* CORRECT ANSWER — large, prominent, neutral */}
+      <div style={{ textAlign: "center", marginBottom: 4 }}>
+        <div style={{ fontSize: 10, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 3 }}>
+          {result.correct ? "🎉 Correct!" : "The answer was"}
+        </div>
+        <div className="abig" style={{ color: "#FFFFFF", textShadow: "0 0 20px rgba(255,255,255,0.15)" }}>{cara.answer}</div>
+      </div>
+
       <div className="asub">{result.correct ? (result.speedBonus ? "⚡ Speed bonus! First try lightning fast" : `Got it in ${result.attempts} ${result.attempts === 1 ? "try" : "tries"}`) : result.timedOut ? "⏱ Time's up — the clock got you" : "Most players miss this one"}</div>
       {s1 && <div className="strio" style={{ animation: "countUp .4s ease-out" }}>
         <div className="sbox"><div className="snum" style={{ color: result.correct ? "#4ADE80" : "#FF8A65" }}>+{score}</div><div className="slbl">Points</div></div>
@@ -805,7 +840,7 @@ export default function App() {
                 <VideoBlock cara={cara} />
               </>
             )}
-            {showVid && <CommentsBlock caraId={cara.id} revealed={phase==="answer"} />}
+            {showVid && <CommentsBlock caraId={cara.id} revealed={phase==="answer"} result={result} />}
             {phase === "play" && <PlayScreen cara={cara} onResult={handleResult} onSkip={handleSkip} attempts={attempts} setAttempts={setAttempts} sessionStart={sessionStart} />}
             {phase === "answer" && result && <AnswerScreen cara={cara} result={result} score={score} streak={streak} totalScore={total} onContinue={handleContinue} isLast={isLast} />}
             {phase === "pause" && <MicroPause index={index + 1} total={CARAS.length} streak={streak} correct={correct} onNext={advanceNext} />}
