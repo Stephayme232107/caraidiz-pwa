@@ -475,13 +475,37 @@ function MicroPause({ index, total, streak, correct, onNext }) {
 
 function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) {
   const [copied, setCopied] = useState(false);
+  const [isNewBest, setIsNewBest] = useState(false);
   const pct = Math.round(correct / CARAS.length * 100);
-  const rank = pct >= 80 ? "TOP 5% 🏆" : pct >= 60 ? "TOP 20% ⭐" : pct >= 40 ? "TOP 50%" : "KEEP GOING 💪";
   const timeSpent = Math.round((Date.now() - sessionStart) / 1000);
+
+  // Rank message based on score
+  const rankMsg = pct === 100 ? "PERFECT SCORE 👑"
+    : pct >= 80 ? "TOP PLAYER 🏆"
+    : pct >= 60 ? "WELL PLAYED ⭐"
+    : pct >= 40 ? "GOOD START 💪"
+    : "KEEP GOING 🔥";
+
+  // Ego line based on performance
+  const egoLine = pct === 100 ? "Less than 5% of players get a perfect score."
+    : pct >= 80 ? "You're better than 80% of players."
+    : pct >= 60 ? "Most players don't make it this far."
+    : bestStreak >= 3 ? `That ${bestStreak}-streak though 🔥`
+    : "Each play makes you sharper.";
+
+  // Replay hook
+  const replayHook = isNewBest
+    ? "🏆 New personal best! Can you do it again?"
+    : totalScore > 0
+    ? `Beat your score of ${totalScore} pts — play again.`
+    : "Think you can do better? Play again.";
 
   useEffect(() => {
     const prev = loadJSON("crz_best", 0);
-    if (totalScore > prev) saveJSON("crz_best", totalScore);
+    if (totalScore > prev) {
+      saveJSON("crz_best", totalScore);
+      setIsNewBest(true);
+    }
     mp.track("session_complete", {
       total_score: totalScore, correct_count: correct,
       caras_played: CARAS.length, best_streak: bestStreak,
@@ -493,23 +517,93 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   }, []);
 
   function share() {
-    navigator.clipboard.writeText(`💎 CARAIDIZ\nI scored ${totalScore} pts · ${correct}/6 correct\n${rank}\nCan you beat me?\ncaraidiz-pwa.vercel.app`).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    const shareText = `💎 CARAIDIZ\n\nI scored ${totalScore} pts\n${correct}/6 correct · 🔥 ${bestStreak} streak\n\nCan you beat me?\ncaraidiz-pwa.vercel.app`;
+    navigator.clipboard.writeText(shareText).then(() => {
+      setCopied(true);
+      mp.track("score_shared", { total_score: totalScore, correct_count: correct });
+      setTimeout(() => setCopied(false), 2500);
+    });
   }
 
   return (
     <div className="end">
-      <div className="etrophy">{pct >= 80 ? "🏆" : pct >= 60 ? "⭐" : "💎"}</div>
-      <div className="etitle">YOU FINISHED 🔥</div>
-      <div className="erank">{rank}</div>
-      <div className="egrid">
-        <div className="ebox"><div className="en" style={{ color: "#80DEEA" }}>{totalScore}</div><div className="el">Points</div></div>
+      {/* Trophy */}
+      <div className="etrophy">{pct === 100 ? "👑" : pct >= 80 ? "🏆" : pct >= 60 ? "⭐" : "💎"}</div>
+
+      {/* Title */}
+      <div className="etitle">YOU FINISHED THE CHALLENGE</div>
+
+      {/* Rank badge */}
+      <div className="erank">{rankMsg}</div>
+
+      {/* New best banner */}
+      {isNewBest && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(250,204,21,0.15), rgba(255,138,101,0.15))",
+          border: "1px solid rgba(250,204,21,0.4)",
+          borderRadius: 12, padding: "10px 16px",
+          textAlign: "center", fontSize: 13,
+          color: "#FACC15", fontWeight: 800,
+          marginBottom: 14, animation: "slideDown .4s ease-out"
+        }}>
+          🏆 New personal best!
+        </div>
+      )}
+
+      {/* Score + streak — the two hero numbers */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+        <div style={{
+          flex: 1, background: "rgba(128,222,234,0.08)",
+          border: "1px solid rgba(128,222,234,0.25)",
+          borderRadius: 16, padding: "20px 10px", textAlign: "center"
+        }}>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 48, color: "#80DEEA", lineHeight: 1, marginBottom: 4 }}>{totalScore}</div>
+          <div style={{ fontSize: 10, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em" }}>Final score</div>
+        </div>
+        <div style={{
+          flex: 1, background: "rgba(255,107,53,0.08)",
+          border: "1px solid rgba(255,107,53,0.25)",
+          borderRadius: 16, padding: "20px 10px", textAlign: "center"
+        }}>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 48, color: "#FF6B35", lineHeight: 1, marginBottom: 4 }}>🔥{bestStreak}</div>
+          <div style={{ fontSize: 10, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em" }}>Best streak</div>
+        </div>
+      </div>
+
+      {/* Secondary stats */}
+      <div className="egrid" style={{ marginBottom: 16 }}>
         <div className="ebox"><div className="en" style={{ color: "#4ADE80" }}>{correct}/6</div><div className="el">Correct</div></div>
-        <div className="ebox"><div className="en" style={{ color: "#FF6B35" }}>{bestStreak}</div><div className="el">Best streak</div></div>
         <div className="ebox"><div className="en" style={{ color: "#FACC15" }}>{pct}%</div><div className="el">Accuracy</div></div>
       </div>
-      <button className="play-again" onClick={onReplay}>PLAY AGAIN 💎</button>
-      <button className="share-btn" onClick={share}>{copied ? "✓ Copied!" : "📋 Share my score"}</button>
-      <div className="comeback">💪 Think you can beat your score? Play again.</div>
+
+      {/* Ego line */}
+      <div style={{
+        background: "rgba(128,222,234,0.06)",
+        border: "1px solid rgba(128,222,234,0.15)",
+        borderRadius: 10, padding: "10px 14px",
+        textAlign: "center", fontSize: 13,
+        color: "#80DEEA", marginBottom: 18
+      }}>{egoLine}</div>
+
+      {/* PRIMARY CTA — Play again */}
+      <button className="play-again" onClick={onReplay}>
+        PLAY AGAIN 🔁
+      </button>
+
+      {/* Replay hook */}
+      <div style={{ textAlign: "center", fontSize: 12, color: "#8888AA", marginBottom: 14 }}>
+        {replayHook}
+      </div>
+
+      {/* Share */}
+      <button className="share-btn" onClick={share}>
+        {copied ? "✓ Copied to clipboard!" : "📋 Share my score"}
+      </button>
+
+      {/* Share prompt */}
+      <div style={{ textAlign: "center", fontSize: 11, color: "#8888AA" }}>
+        Challenge a friend — send them the link 👆
+      </div>
     </div>
   );
 }
