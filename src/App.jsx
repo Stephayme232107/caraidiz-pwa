@@ -120,14 +120,21 @@ const G = `
   .hook-sub{font-size:11px;color:rgba(255,255,255,0.45);font-weight:600;letter-spacing:.08em}
 
   /* VIDEO */
-  .vid{margin:0 16px;border-radius:18px;overflow:hidden;position:relative;background:#0D0D1A;border:1px solid rgba(255,255,255,0.06)}
-  .vid::before{content:'';display:block;padding-top:133%}
-  .vid video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
-  .vid-ph{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px}
-  .cat-badge-overlay{position:absolute;top:10px;left:10px;z-index:10;animation:catFadeIn .2s ease-out}
   .cat-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap;opacity:0.9}
-  .mute-btn{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px);z-index:10}
   @keyframes catFadeIn{from{opacity:0}to{opacity:0.9}}
+  /* MINI PLAYER */
+  .vid-full{margin:0 16px;border-radius:18px;overflow:hidden;position:relative;background:#0D0D1A;border:1px solid rgba(255,255,255,0.06);transition:all .3s ease}
+  .vid-full::before{content:'';display:block;padding-top:133%}
+  .vid-mini{margin:0;border-radius:0;overflow:hidden;position:relative;background:#0D0D1A;border-bottom:1px solid rgba(255,255,255,0.08);transition:all .3s ease}
+  .vid-mini::before{content:'';display:block;padding-top:40%}
+  .vid-full video,.vid-mini video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
+  .vid-full .vid-ph,.vid-mini .vid-ph{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px}
+  .vid-full .cat-badge-overlay{position:absolute;top:10px;left:10px;z-index:10;animation:catFadeIn .2s ease-out}
+  .vid-mini .cat-badge-overlay{position:absolute;top:8px;left:8px;z-index:10}
+  .vid-full .mute-btn{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px);z-index:10}
+  .vid-mini .mute-btn{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:10}
+  .mini-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.25);z-index:5}
+
 
   /* TIMER */
   .timer-wrap{padding:6px 16px 2px}
@@ -210,7 +217,7 @@ const G = `
 `;
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara }) {
+function VideoBlock({ cara, mini=false }) {
   const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
   const cc    = CAT_COLORS[cara.category] || "#80DEEA";
@@ -228,13 +235,14 @@ function VideoBlock({ cara }) {
   }
 
   return (
-    <div className="vid">
+    <div className={mini ? "vid-mini" : "vid-full"}>
       {cara.videoUrl
         ? <video ref={videoRef} src={cara.videoUrl} autoPlay muted loop playsInline />
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
+      {mini && <div className="mini-overlay"/>}
       <div className="cat-badge-overlay">
-        <div className="cat-pill" style={{ background:"rgba(0,0,0,0.55)", border:`1px solid ${cc}44`, color:cc }}>
+        <div className="cat-pill" style={{ background:"rgba(0,0,0,0.65)", border:`1px solid ${cc}44`, color:cc }}>
           <span style={{fontSize:11}}>{emoji}</span>
           <span>{cara.category.toUpperCase()} · {words}</span>
         </div>
@@ -300,12 +308,16 @@ function StartScreen({ onStart }) {
 }
 
 // ─── PLAY SCREEN ──────────────────────────────────────────────
-function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts }) {
+function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts, onFocusChange }) {
   const [guess,    setGuess]    = useState("");
   const [shaking,  setShaking]  = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
+  const [focused,  setFocused]  = useState(false);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category] || "#80DEEA";
+
+  function handleFocus()  { setFocused(true);  onFocusChange?.(true); }
+  function handleBlur()   { setFocused(false); onFocusChange?.(false); }
 
   useEffect(() => { setGuess(""); setTimeLeft(TIMER_DURATION); setTimeout(() => ref.current?.focus(), 200); }, [cara.id]);
 
@@ -351,7 +363,7 @@ function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts }) {
         <div className="wdots">{Array.from({length:cara.wordCount}).map((_,i)=><div key={i} className="wdot"/>)}</div>
         {attempts===MAX_ATTEMPTS-1&&<div className="hint-box">💡 {cara.hint}</div>}
         <div className="irow">
-          <input ref={ref} className={`ginput${shaking?" shake":""}`} placeholder="Type your guess…" value={guess} onChange={e=>setGuess(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoFocus/>
+          <input ref={ref} className={`ginput${shaking?" shake":""}`} placeholder="Type your guess…" value={guess} onChange={e=>setGuess(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} onFocus={handleFocus} onBlur={handleBlur} autoFocus/>
           <button className="gbtn" onClick={submit} disabled={!guess.trim()}>→</button>
         </div>
         <button className="skip" onClick={onSkip}>Skip — I don't know</button>
@@ -504,6 +516,7 @@ export default function App() {
   const [best,         setBest]         = useState(0);
   const [correct,      setCorrect]      = useState(0);
   const [sessionStart, setSessionStart] = useState(Date.now());
+  const [inputFocused, setInputFocused] = useState(false);
 
   useEffect(()=>{ mp.init(); },[]);
 
@@ -570,15 +583,17 @@ export default function App() {
             )}
             {showVid&&(
               <>
-                <div className="hook-wrap">
-                  <div className="hook-main">ONLY {cara.firstGuessRate}% GET THIS 👀</div>
-                  <div className="hook-sub">Can you?</div>
-                </div>
-                <VideoBlock cara={cara}/>
+                {!inputFocused && (
+                  <div className="hook-wrap">
+                    <div className="hook-main">ONLY {cara.firstGuessRate}% GET THIS 👀</div>
+                    <div className="hook-sub">Can you?</div>
+                  </div>
+                )}
+                <VideoBlock cara={cara} mini={inputFocused}/>
                 <CommentsBlock caraId={cara.id} revealed={phase==="answer"} result={result}/>
               </>
             )}
-            {phase==="play"&&<PlayScreen cara={cara} onResult={handleResult} onSkip={handleSkip} attempts={attempts} setAttempts={setAttempts}/>}
+            {phase==="play"&&<PlayScreen cara={cara} onResult={handleResult} onSkip={handleSkip} attempts={attempts} setAttempts={setAttempts} onFocusChange={setInputFocused}/>}
             {phase==="answer"&&result&&<AnswerScreen cara={cara} result={result} score={score} streak={streak} totalScore={total} onContinue={handleContinue} isLast={isLast}/>}
             {phase==="pause"&&<MicroPause index={index+1} total={CARAS.length} streak={streak} correct={correct} onNext={advanceNext}/>}
           </div>
