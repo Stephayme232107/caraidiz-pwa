@@ -79,9 +79,26 @@ const CARAS = [
 
 const MAX_ATTEMPTS = 3;
 const CAT_COLORS = {
-  Song: "#C084FC", Brand: "#80DEEA", Phrase: "#FB7185",
+  Song: "#C084FC", Brand: "#FF6B9D", Phrase: "#FF8A65",
   "TV Show Character": "#F472B6", Bonus: "#FACC15",
-  Sport: "#4ADE80", Film: "#FF8A65", "TV Show": "#FACC15"
+  Sport: "#4ADE80", Film: "#60A5FA", "TV Show": "#FACC15"
+};
+
+const CAT_EMOJI = {
+  Song: "🎵", Brand: "✨", Phrase: "💬",
+  "TV Show Character": "📺", Bonus: "💎",
+  Sport: "🏆", Film: "🎬", "TV Show": "📺"
+};
+
+const CAT_GUESS = {
+  Song: "Guess the song",
+  Brand: "Guess the brand",
+  Phrase: "Guess the phrase",
+  "TV Show Character": "Guess the character",
+  Bonus: "Bonus round",
+  Sport: "Guess the sport",
+  Film: "Guess the film",
+  "TV Show": "Guess the show"
 };
 const DIFF_COLORS = { easy: "#4ADE80", medium: "#FACC15", hard: "#FF8A65", expert: "#F472B6" };
 
@@ -184,7 +201,7 @@ const G = `
   .vid video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
   .vid::before{content:'';display:block;padding-top:177.78%}
   .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px}
-  .diff-chip{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+  .diff-chip{display:none}
   .tension-chip{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;backdrop-filter:blur(4px)}
 
   /* PLAY */
@@ -254,6 +271,36 @@ const G = `
   .timer-secs{font-weight:800;font-size:12px}
   .timer-secs.urgent{color:#FF8A65;animation:timerPulse .5s ease-in-out infinite}
   @keyframes timerPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+
+  /* CATEGORY BADGE */
+  .cat-badge-overlay{
+    position:absolute;
+    top:12px;left:12px;
+    z-index:10;
+    display:flex;flex-direction:column;gap:3px;
+    animation:catFadeIn .2s ease-out;
+  }
+  .cat-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 14px;
+    border-radius:999px;
+    font-size:11px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;
+    backdrop-filter:blur(8px);
+    white-space:nowrap;
+  }
+  .cat-pill-emoji{font-size:13px;line-height:1}
+  .cat-sub{
+    font-size:10px;font-weight:600;
+    color:rgba(255,255,255,0.7);
+    padding-left:4px;
+    letter-spacing:.04em;
+  }
+  @keyframes catFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  /* MUTE BUTTON */
+  .mute-btn{position:absolute;bottom:14px;right:14px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;transition:transform .1s}
+  .mute-btn:active{transform:scale(.9)}
   /* COMMENTS */
   .comments-section{padding:8px 16px 0}
   .comments-header{font-size:9px;color:#8888AA;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
@@ -278,7 +325,7 @@ const G = `
 
 // ─── COMPONENTS ───────────────────────────────────────────────
 
-// ─── COMMENTS BLOCK ───────────────────────────────────────────
+// ─── VIDEO BLOCK WITH MUTE ────────────────────────────────────
 function CommentsBlock({ caraId, revealed }) {
   const comments = FAKE_COMMENTS[caraId] || [];
   return (
@@ -305,16 +352,55 @@ function CommentsBlock({ caraId, revealed }) {
 
 
 function VideoBlock({ cara }) {
-  const dc = DIFF_COLORS[cara.difficulty] || "#80DEEA";
+  const [muted, setMuted] = useState(true);
+  const videoRef = useRef(null);
   const cc = CAT_COLORS[cara.category] || "#80DEEA";
+  const emoji = CAT_EMOJI[cara.category] || "💎";
+  const guessText = CAT_GUESS[cara.category] || "Make your guess";
+  const wordsLabel = cara.wordCount === 1 ? "1 WORD" : `${cara.wordCount} WORDS`;
+
+  useEffect(() => {
+    setMuted(true);
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [cara.id]);
+
+  function toggleMute() {
+    const newMuted = !muted;
+    setMuted(newMuted);
+    if (videoRef.current) videoRef.current.muted = newMuted;
+  }
+
   return (
     <div className="vid">
       {cara.videoUrl
-        ? <video src={cara.videoUrl} autoPlay muted loop playsInline />
+        ? <video ref={videoRef} src={cara.videoUrl} autoPlay muted loop playsInline />
         : <div className="vid-ph"><span style={{ fontSize: 48, opacity: .12 }}>🎬</span><span>Video loading...</span></div>
       }
-      <div className="diff-chip" style={{ background: `${dc}18`, border: `1px solid ${dc}44`, color: dc }}>{cara.difficulty}</div>
+
+      {/* CATEGORY BADGE — top left */}
+      <div className="cat-badge-overlay">
+        <div className="cat-pill" style={{
+          background: `${cc}22`,
+          border: `1.5px solid ${cc}66`,
+          color: cc,
+          boxShadow: `0 0 12px ${cc}33`
+        }}>
+          <span className="cat-pill-emoji">{emoji}</span>
+          <span>{cara.category.toUpperCase()} · {wordsLabel}</span>
+        </div>
+        <span className="cat-sub">{guessText}</span>
+      </div>
+
+      {/* TENSION — top right */}
       <div className="tension-chip">Only {cara.firstGuessRate}% get this 👀</div>
+
+      {/* MUTE — bottom right */}
+      <button className="mute-btn" onClick={toggleMute}>
+        {muted ? "🔇" : "🔊"}
+      </button>
     </div>
   );
 }
@@ -527,83 +613,86 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
 
   return (
     <div className="end">
-      {/* Trophy */}
-      <div className="etrophy">{pct === 100 ? "👑" : pct >= 80 ? "🏆" : pct >= 60 ? "⭐" : "💎"}</div>
 
-      {/* Title */}
-      <div className="etitle">YOU FINISHED THE CHALLENGE</div>
+      {/* TROPHY + TITLE */}
+      <div className="etrophy">🏆</div>
+      <div className="etitle">YOU FINISHED 🔥</div>
 
-      {/* Rank badge */}
-      <div className="erank">{rankMsg}</div>
+      {/* EGO LINE — always visible, always punchy */}
+      <div style={{
+        fontSize: 14, color: "#80DEEA", fontWeight: 700,
+        textAlign: "center", marginBottom: 20, letterSpacing: ".02em"
+      }}>{egoLine}</div>
 
-      {/* New best banner */}
-      {isNewBest && (
-        <div style={{
-          background: "linear-gradient(135deg, rgba(250,204,21,0.15), rgba(255,138,101,0.15))",
-          border: "1px solid rgba(250,204,21,0.4)",
-          borderRadius: 12, padding: "10px 16px",
-          textAlign: "center", fontSize: 13,
-          color: "#FACC15", fontWeight: 800,
-          marginBottom: 14, animation: "slideDown .4s ease-out"
-        }}>
-          🏆 New personal best!
-        </div>
-      )}
-
-      {/* Score + streak — the two hero numbers */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+      {/* HERO STATS — 3 big numbers */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
         <div style={{
           flex: 1, background: "rgba(128,222,234,0.08)",
-          border: "1px solid rgba(128,222,234,0.25)",
-          borderRadius: 16, padding: "20px 10px", textAlign: "center"
+          border: "1px solid rgba(128,222,234,0.2)",
+          borderRadius: 16, padding: "18px 8px", textAlign: "center"
         }}>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 48, color: "#80DEEA", lineHeight: 1, marginBottom: 4 }}>{totalScore}</div>
-          <div style={{ fontSize: 10, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em" }}>Final score</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 42, color: "#80DEEA", lineHeight: 1, marginBottom: 3 }}>{totalScore}</div>
+          <div style={{ fontSize: 9, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em" }}>pts</div>
+        </div>
+        <div style={{
+          flex: 1, background: "rgba(74,222,128,0.08)",
+          border: "1px solid rgba(74,222,128,0.2)",
+          borderRadius: 16, padding: "18px 8px", textAlign: "center"
+        }}>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 42, color: "#4ADE80", lineHeight: 1, marginBottom: 3 }}>{correct}/6</div>
+          <div style={{ fontSize: 9, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em" }}>correct</div>
         </div>
         <div style={{
           flex: 1, background: "rgba(255,107,53,0.08)",
-          border: "1px solid rgba(255,107,53,0.25)",
-          borderRadius: 16, padding: "20px 10px", textAlign: "center"
+          border: "1px solid rgba(255,107,53,0.2)",
+          borderRadius: 16, padding: "18px 8px", textAlign: "center"
         }}>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 48, color: "#FF6B35", lineHeight: 1, marginBottom: 4 }}>🔥{bestStreak}</div>
-          <div style={{ fontSize: 10, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em" }}>Best streak</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 42, color: "#FF6B35", lineHeight: 1, marginBottom: 3 }}>🔥{bestStreak}</div>
+          <div style={{ fontSize: 9, color: "#8888AA", textTransform: "uppercase", letterSpacing: ".1em" }}>streak</div>
         </div>
       </div>
 
-      {/* Secondary stats */}
-      <div className="egrid" style={{ marginBottom: 16 }}>
-        <div className="ebox"><div className="en" style={{ color: "#4ADE80" }}>{correct}/6</div><div className="el">Correct</div></div>
-        <div className="ebox"><div className="en" style={{ color: "#FACC15" }}>{pct}%</div><div className="el">Accuracy</div></div>
-      </div>
-
-      {/* Ego line */}
+      {/* CHALLENGE DIVIDER */}
       <div style={{
-        background: "rgba(128,222,234,0.06)",
-        border: "1px solid rgba(128,222,234,0.15)",
-        borderRadius: 10, padding: "10px 14px",
-        textAlign: "center", fontSize: 13,
-        color: "#80DEEA", marginBottom: 18
-      }}>{egoLine}</div>
+        textAlign: "center", fontSize: 15, fontWeight: 800,
+        color: "#fff", marginBottom: 6, letterSpacing: ".02em"
+      }}>😈 Can your friends beat this?</div>
 
-      {/* PRIMARY CTA — Play again */}
-      <button className="play-again" onClick={onReplay}>
-        PLAY AGAIN 🔁
+      {/* PRIMARY CTA — SHARE */}
+      <button style={{
+        width: "100%", background: "#80DEEA", color: "#0A0A0F",
+        border: "none", borderRadius: 14, padding: 16,
+        fontFamily: "'Bebas Neue',sans-serif", fontSize: 20,
+        letterSpacing: ".06em", cursor: "pointer",
+        marginBottom: 6, display: "block", textAlign: "center",
+        boxShadow: "0 8px 24px rgba(128,222,234,0.3)"
+      }} onClick={share}>
+        {copied ? "✓ LINK COPIED!" : "📋 SEND THIS CHALLENGE"}
       </button>
 
-      {/* Replay hook */}
-      <div style={{ textAlign: "center", fontSize: 12, color: "#8888AA", marginBottom: 14 }}>
-        {replayHook}
+      {/* Share subtext */}
+      <div style={{ textAlign: "center", fontSize: 12, color: "#8888AA", marginBottom: 18 }}>
+        They won't get all 6 😏
       </div>
 
-      {/* Share */}
-      <button className="share-btn" onClick={share}>
-        {copied ? "✓ Copied to clipboard!" : "📋 Share my score"}
+      {/* SECONDARY CTA — PLAY AGAIN */}
+      <button style={{
+        width: "100%", background: "transparent",
+        border: "1.5px solid rgba(255,255,255,0.15)",
+        borderRadius: 14, padding: 14,
+        color: "#fff", fontFamily: "'Bebas Neue',sans-serif",
+        fontSize: 18, letterSpacing: ".06em",
+        cursor: "pointer", marginBottom: 10,
+        display: "block", textAlign: "center"
+      }} onClick={onReplay}>
+        🔁 PLAY AGAIN
       </button>
 
-      {/* Share prompt */}
+      {/* Replay nudge */}
       <div style={{ textAlign: "center", fontSize: 11, color: "#8888AA" }}>
-        Challenge a friend — send them the link 👆
+        Most players don't improve their score 😈
       </div>
+
     </div>
   );
 }
