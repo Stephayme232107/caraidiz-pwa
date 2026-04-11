@@ -157,7 +157,7 @@ const G = `
   .start-logo{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:.12em;background:linear-gradient(135deg,#fff 0%,#80DEEA 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative;z-index:1;margin-bottom:4px}
   .start-gem{font-size:40px;position:relative;z-index:1;animation:float 3s ease-in-out infinite;margin-bottom:16px}
   .start-tag{font-size:12px;color:#8888AA;letter-spacing:.16em;text-transform:uppercase;position:relative;z-index:1;margin-bottom:28px}
-  .start-badge{background:rgba(255,107,53,0.15);border:1px solid rgba(255,107,53,0.4);color:#FF6B35;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;position:relative;z-index:1;margin-bottom:6px}
+  .start-badge{background:rgba(128,222,234,0.12);border:1px solid rgba(128,222,234,0.3);color:#80DEEA;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;position:relative;z-index:1;margin-bottom:6px}
   .start-count{font-size:13px;color:rgba(255,255,255,0.45);position:relative;z-index:1}
   .start-body{padding:20px}
   .start-btn{width:100%;background:#80DEEA;color:#0A0A0F;border:none;border-radius:16px;padding:18px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em;cursor:pointer;box-shadow:0 8px 32px rgba(128,222,234,0.3);transition:transform .1s}
@@ -180,8 +180,9 @@ const G = `
   .pip{flex:1;height:4px;border-radius:2px;transition:background .4s}
 
   /* VIDEO */
-  .vid{margin:0 16px;border-radius:18px;overflow:hidden;position:relative;background:#0D0D1A;aspect-ratio:9/14;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.06);max-height:52vh}
-  .vid video{width:100%;height:100%;object-fit:cover;display:block}
+  .vid{margin:0 16px;border-radius:18px;overflow:hidden;position:relative;background:#0D0D1A;width:calc(100% - 32px);aspect-ratio:9/16;border:1px solid rgba(255,255,255,0.06);max-height:56vh}
+  .vid video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
+  .vid::before{content:'';display:block;padding-top:177.78%}
   .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px}
   .diff-chip{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
   .tension-chip{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;backdrop-filter:blur(4px)}
@@ -327,13 +328,13 @@ function StartScreen({ onStart }) {
         <div className="start-gem">💎</div>
         <div className="start-logo">CARAIDIZ</div>
         <div className="start-tag">watching becomes playing</div>
-        <div className="start-badge">🔥 Today's Challenge</div>
-        <div className="start-count" style={{ marginTop: 6 }}>6 Caras to beat</div>
+        <div className="start-badge">💎 6 Caras to beat</div>
+        <div className="start-count" style={{ marginTop: 6 }}>Can you beat them all?</div>
         {best > 0 && <div style={{ marginTop: 8, fontSize: 11, color: "rgba(128,222,234,0.6)" }}>Your best: {best} pts</div>}
       </div>
       <div className="start-body">
         <button className="start-btn" onClick={onStart}>START PLAYING →</button>
-        <div className="best-score">No signup · Free · Installable 📱</div>
+        <div className="best-score">No signup · Free · ~3 min to complete</div>
       </div>
     </div>
   );
@@ -508,7 +509,7 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
       </div>
       <button className="play-again" onClick={onReplay}>PLAY AGAIN 💎</button>
       <button className="share-btn" onClick={share}>{copied ? "✓ Copied!" : "📋 Share my score"}</button>
-      <div className="comeback">🗓 New Caras drop daily — come back tomorrow! 💎</div>
+      <div className="comeback">💪 Think you can beat your score? Play again.</div>
     </div>
   );
 }
