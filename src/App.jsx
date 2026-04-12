@@ -107,12 +107,15 @@ function getAcceptedBrand(guess, cara) {
 
 // ─── DATA ─────────────────────────────────────────────────────
 const CARAS = [
-  { id:1, category:"Song",              answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",     videoUrl:`${CDN}/thriller.mp4.mp4`,   firstGuessRate:61 },
-  { id:2, category:"Phrase",            answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",          videoUrl:`${CDN}/i-break-up.mp4.mp4`, firstGuessRate:43 },
-  { id:3, category:"Brand",             answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",    videoUrl:`${CDN}/revlon.mp4.mp4`,     firstGuessRate:68, competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
-  { id:4, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",   videoUrl:`${CDN}/jr-ewing.mp4.mp4`,   firstGuessRate:28 },
-  { id:5, category:"Phrase",            answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",     videoUrl:`${CDN}/marry-me.mp4.mp4`,   firstGuessRate:55 },
-  { id:6, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸", videoUrl:`${CDN}/coldplay.mp4.mp4`,   firstGuessRate:22 },
+  { id:1, category:"Song",              answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",          videoUrl:`${CDN}/thriller.mp4.mp4`,    firstGuessRate:61 },
+  { id:2, category:"Song",              answer:"Umbrella",            wordCount:1, difficulty:"easy",   hint:"Rihanna. Rain. ☂️",                     videoUrl:`${CDN}/umbrella.mp4.mp4`,    firstGuessRate:58 },
+  { id:3, category:"Brand",             answer:"Gillette",            wordCount:1, difficulty:"easy",   hint:"The best a man can get 🪒",              videoUrl:`${CDN}/gillette.mp4.mp4`,    firstGuessRate:55, competitors:["GILLETTE","SCHICK","BIC","HARRY'S"] },
+  { id:4, category:"Brand",             answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,      firstGuessRate:48, competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
+  { id:5, category:"Phrase",            answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",               videoUrl:`${CDN}/i-break-up.mp4.mp4`,  firstGuessRate:43 },
+  { id:6, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",        videoUrl:`${CDN}/jr-ewing.mp4.mp4`,    firstGuessRate:28 },
+  { id:7, category:"Phrase",            answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",          videoUrl:`${CDN}/marry-me.mp4.mp4`,    firstGuessRate:35 },
+  { id:8, category:"TV Show Character", answer:"Olivia Pope",         wordCount:2, difficulty:"expert", hint:"Scandal. Fixer extraordinaire. 👗",        videoUrl:`${CDN}/olivia-pope.mp4.mp4`, firstGuessRate:18 },
+  { id:9, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,    firstGuessRate:22 },
 ];
 
 const MAX_ATTEMPTS   = 3;
@@ -125,22 +128,31 @@ const CAT_EMOJI  = { Song:"🎵", Brand:"✨", Phrase:"💬", "TV Show Character
 
 // ─── COMMENTS ─────────────────────────────────────────────────
 const CARA_FLAVOR = {
-  1:{correct:"THRILLER omg i screamed 🕺",      wrong:"😭 I said beat it wtf"},
-  2:{correct:"i break up with you LMAOOO 💔",   wrong:"wait is it we need to talk??"},
-  3:{correct:"REVLON instantly knew 💅",         wrong:"loreal?? maybelline?? 😭"},
-  4:{correct:"JR EWING DALLAS ERA 🤠",           wrong:"no idea who this is ngl 😅"},
-  5:{correct:"WOULD YOU MARRY ME crying rn 💍", wrong:"is it a proposal phrase??"},
-  6:{correct:"COLDPLAY KISS CAM iconic 🎸😂",   wrong:"coldplay concert?? something with coldplay"},
+  1:{correct:"THRILLER omg i screamed 🕺",         wrong:"😭 I said beat it wtf"},
+  2:{correct:"UMBRELLA ☂️ rihanna era unlocked",   wrong:"wait is it rain on me??"},
+  5:{correct:"i break up with you LMAOOO 💔",      wrong:"wait is it we need to talk??"},
+  6:{correct:"JR EWING DALLAS ERA 🤠",             wrong:"no idea who this is ngl 😅"},
+  7:{correct:"WOULD YOU MARRY ME crying rn 💍",    wrong:"is it a proposal phrase??"},
+  8:{correct:"OLIVIA POPE SCANDAL ERA 👗🔥",       wrong:"grey's anatomy?? suits?? idk 😭"},
+  9:{correct:"COLDPLAY KISS CAM iconic 🎸😂",      wrong:"coldplay concert?? something with coldplay"},
 };
 const TEASE_COMMENTS = ["nah this one is hard…","I got it instantly","ok I give up lmao","wait wait wait…","this is so obvious omg"];
 const BRAND_FEEDS = {
   3:[
-    {avatar:"💅",text:"loreal ✓",type:"correct"},
-    {avatar:"😂",text:"maybelline??",type:"wrong"},
-    {avatar:"👀",text:"fenty beauty omg ✓",type:"correct"},
-    {avatar:"😭",text:"i said sephora 💀",type:"wrong"},
-    {avatar:"✨",text:"mac ✓",type:"correct"},
-    {avatar:"🤷",text:"nyx??",type:"wrong"},
+    {avatar:"🪒", text:"gillette ✓",         type:"correct"},
+    {avatar:"😂", text:"schick??",            type:"wrong"},
+    {avatar:"👀", text:"harry's omg ✓",      type:"correct"},
+    {avatar:"😭", text:"i said dollar shave 💀", type:"wrong"},
+    {avatar:"✨", text:"bic ✓",              type:"correct"},
+    {avatar:"🤷", text:"venus??",            type:"wrong"},
+  ],
+  4:[
+    {avatar:"💅", text:"loreal ✓",           type:"correct"},
+    {avatar:"😂", text:"maybelline??",        type:"wrong"},
+    {avatar:"👀", text:"fenty beauty omg ✓", type:"correct"},
+    {avatar:"😭", text:"i said sephora 💀",  type:"wrong"},
+    {avatar:"✨", text:"mac ✓",              type:"correct"},
+    {avatar:"🤷", text:"nyx??",              type:"wrong"},
   ]
 };
 
@@ -613,7 +625,7 @@ function StartScreen({ onStart }) {
           <div className="start-gem">💎</div>
           <div className="start-logo">CARAIDIZ</div>
           <div className="start-tag">watching becomes playing</div>
-          {!challenger&&<div className="start-badge">💎 6 Caras to beat</div>}
+          {!challenger&&<div className="start-badge">💎 {CARAS.length} Caras to beat</div>}
           {!challenger&&<div className="start-count" style={{marginTop:6}}>Can you beat them all?</div>}
           {!challenger&&best>0&&<div style={{marginTop:8,fontSize:11,color:"rgba(128,222,234,0.6)"}}>Your best: {best} pts</div>}
         </div>
@@ -635,7 +647,7 @@ function PauseScreen({ index, total, streak, correct, onNext }) {
         <div className="pause-frac">{correct}/{total}</div>
         <div className="pause-lbl">Caras completed</div>
         {streak>=2&&<div className="pause-streak"><span>🔥</span><span>Streak: {streak}</span></div>}
-        {index===3&&<div className="level-up">🔥 You're doing better than 80% of players</div>}
+        {index===5&&<div className="level-up">🔥 You're halfway — better than 80% of players</div>}
         <div style={{fontSize:11,color:"#8888AA",marginTop:10}}>Next Cara loading...</div>
       </div>
     </div>
@@ -659,7 +671,7 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   },[]);
   function share(){
     const link=`https://caraidiz-pwa.vercel.app/?c=${correct}-${CARAS.length}-${totalScore}`;
-    const text=`I got ${correct}/6 on Caraidiz 💎 Think you can beat me?\n${link}`;
+    const text=`I got ${correct}/${CARAS.length} on Caraidiz 💎 Think you can beat me?\n${link}`;
     mp.track("score_shared",{correct,score:totalScore,streak:bestStreak});
     if(navigator.share){ navigator.share({text}).catch(()=>{}); }
     else { navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);}); }
@@ -673,12 +685,12 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
         {isNew&&<div style={{background:"rgba(250,204,21,0.1)",border:"1px solid rgba(250,204,21,0.3)",borderRadius:12,padding:"9px 14px",textAlign:"center",fontSize:13,color:"#FACC15",fontWeight:800,marginBottom:12}}>🏆 New personal best!</div>}
         <div className="egrid" style={{marginBottom:10}}>
           <div className="ebox"><div className="en" style={{color:"#80DEEA"}}>{totalScore}</div><div className="el">pts</div></div>
-          <div className="ebox"><div className="en" style={{color:"#4ADE80"}}>{correct}/6</div><div className="el">correct</div></div>
+          <div className="ebox"><div className="en" style={{color:"#4ADE80"}}>{correct}/{CARAS.length}</div><div className="el">correct</div></div>
           <div className="ebox"><div className="en" style={{color:"#FF6B35"}}>🔥{bestStreak}</div><div className="el">streak</div></div>
         </div>
         <div style={{fontSize:13,color:"#8888AA",textAlign:"center",marginBottom:12}}>{ego}</div>
         <div style={{fontSize:12,fontWeight:800,color:"#80DEEA",letterSpacing:".1em",textTransform:"uppercase",marginBottom:8,textShadow:"0 0 20px rgba(128,222,234,0.4)"}}>ONLY 5% FINISH THIS 💎</div>
-        <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:10}}>I got {correct}/6 — can you beat me?</div>
+        <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:10}}>I got {correct}/{CARAS.length} — can you beat me?</div>
         <button style={{width:"100%",background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",border:"none",borderRadius:16,padding:"17px 16px",fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".08em",cursor:"pointer",marginBottom:7,boxShadow:"0 8px 32px rgba(255,107,53,0.4)",animation:"pulseCTA 1.8s ease-in-out infinite"}} onClick={share}>
           {copied?"✓ LINK COPIED! 🔥":"🔥 CHALLENGE A FRIEND"}
         </button>
