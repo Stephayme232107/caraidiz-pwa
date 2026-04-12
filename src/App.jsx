@@ -336,6 +336,13 @@ const G = `
   .en{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.04em;line-height:1;margin-bottom:2px}
   .el{font-size:9px;color:#8888AA;text-transform:uppercase;letter-spacing:.07em}
 
+  /* ── COMMENTS OVERLAY (TikTok style on video) ── */
+  .comments-overlay{position:absolute;bottom:48px;left:0;right:0;z-index:6;padding:8px 14px 6px;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%)}
+  .cmt-ov-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+  .cmt-ov-avatar{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0}
+  .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18);filter:blur(4px)}
+  .cmt-ov-lock{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(128,222,234,0.9);font-weight:700;letter-spacing:.04em;margin-top:2px}
+
   /* ── ANIMATIONS ── */
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -346,7 +353,7 @@ const G = `
 `;
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, height="40vh", frozen=false }) {
+function VideoBlock({ cara, height="52vh", frozen=false, showComments=false }) {
   const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
@@ -374,6 +381,13 @@ function VideoBlock({ cara, height="40vh", frozen=false }) {
       </div>
       <div className="hint-badge">Only {cara.firstGuessRate}% get this 👀</div>
       <button className="mute-btn" onClick={toggle}>{muted?"🔇":"🔊"}</button>
+      {showComments&&(
+        <div className="comments-overlay">
+          <div className="cmt-ov-row"><div className="cmt-ov-avatar"/><div className="cmt-ov-line" style={{width:"55%"}}/></div>
+          <div className="cmt-ov-row"><div className="cmt-ov-avatar"/><div className="cmt-ov-line" style={{width:"38%"}}/></div>
+          <div className="cmt-ov-lock"><span>🔒</span><span>Guess to reveal what others said</span></div>
+        </div>
+      )}
     </div>
   );
 }
@@ -702,15 +716,6 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   );
 }
 
-// ─── VIDEO HEIGHT (adapts to answer length) ───────────────────
-function videoHeight(cara) {
-  const letters = cara.answer.replace(/[^a-zA-Z]/g,"").length;
-  if (letters <= 8)  return "40vh"; // Thriller, Umbrella, Gillette, Revlon
-  if (letters <= 11) return "36vh"; // JR Ewing, Olivia Pope
-  if (letters <= 14) return "30vh"; // Would you marry me, Coldplay Kiss Cam
-  return "26vh";                    // I break up with you (14 letters)
-}
-
 // ─── GAME SCREEN ──────────────────────────────────────────────
 function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttempts, onResult, onSkip }) {
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
@@ -766,9 +771,9 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
           <div className="prog-track"><div className="prog-fill" style={{width:`${index/total*100}%`}}/></div>
           <div className="pips">{CARAS.map((_,i)=><div key={i} className="pip" style={{background:i<index?"#80DEEA":i===index?"rgba(128,222,234,0.4)":"rgba(255,255,255,0.08)"}}/>)}</div>
         </div>
-        {/* VIDEO + TIMER OVERLAY */}
+        {/* VIDEO + TIMER OVERLAY + COMMENTS OVERLAY */}
         <div style={{position:"relative"}}>
-          <VideoBlock cara={cara} height={videoHeight(cara)} frozen={phase==="revealed"}/>
+          <VideoBlock cara={cara} height="52vh" frozen={phase==="revealed"} showComments={phase==="playing"}/>
           {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
         </div>
         {/* +15s BUTTON */}
@@ -786,7 +791,6 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         {/* PLAYING */}
         {phase==="playing"&&(
           <>
-            <CommentsLocked/>
             {cara.category==="Brand"
               ? <BrandTileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
               : <TileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
