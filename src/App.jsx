@@ -296,7 +296,8 @@ const G = `
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
 function VideoBlock({ cara }) {
-  const [muted, setMuted] = useState(true);
+  const [muted,      setMuted]      = useState(true);
+  const [sfxEnabled, setSfxEnabled] = useState(()=>SFX.enabled);
   const videoRef = useRef(null);
   const cc    = CAT_COLORS[cara.category] || "#80DEEA";
   const emoji = CAT_EMOJI[cara.category] || "💎";
@@ -308,7 +309,11 @@ function VideoBlock({ cara }) {
   }, [cara.id]);
 
   function toggleMute() {
+    // First tap enables both video sound AND SFX
+    SFX.init();
     const n = !muted; setMuted(n);
+    SFX.enabled = n;
+    setSfxEnabled(n);
     if (videoRef.current) videoRef.current.muted = n;
   }
 
@@ -325,7 +330,7 @@ function VideoBlock({ cara }) {
           <span>{cara.category.toUpperCase()} · {words}</span>
         </div>
       </div>
-      <button className="mute-btn" onClick={toggleMute}>{muted ? "🔇" : "🔊"}</button>
+      <button className="mute-btn" onClick={toggleMute} title={muted?'Tap for sound':'Sound on'}>{muted ? "🔇" : "🔊"}</button>
     </div>
   );
 }
@@ -410,10 +415,12 @@ function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts }) {
   // Timer countdown
   useEffect(() => {
     if (timeLeft <= 0) {
+      SFX.timeUp();
       mp.track("timer_expired",{cara_id:cara.id});
       onResult({correct:false,attempts:attempts||1,speedBonus:false,timedOut:true,timeLeft:0,lastGuess:selected.map(s=>s.letter).join("")});
       return;
     }
+    if (timeLeft <= 5) SFX.tick();
     const t = setTimeout(()=>setTimeLeft(s=>s-1),1000);
     return ()=>clearTimeout(t);
   },[timeLeft]);
@@ -423,6 +430,7 @@ function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts }) {
 
   function tapTile(tile) {
     if (tile.used || selected.length >= totalLetters) return;
+    SFX.tap();
     const newSelected = [...selected, {tileId:tile.id, letter:tile.letter}];
     setSelected(newSelected);
     setTiles(prev=>prev.map(t=>t.id===tile.id?{...t,used:true}:t));
@@ -444,6 +452,7 @@ function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts }) {
 
   function deleteLast() {
     if (selected.length === 0) return;
+    SFX.delete();
     const removed = selected[selected.length-1];
     setSelected(prev=>prev.slice(0,-1));
     setTiles(prev=>prev.map(t=>t.id===removed.tileId?{...t,used:false}:t));
@@ -467,11 +476,13 @@ function PlayScreen({ cara, onResult, onSkip, attempts, setAttempts }) {
     mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
 
     if (ok) {
+      SFX.correct();
       setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:sel.map(s=>s.letter).join("")}),500);
     } else if (na>=MAX_ATTEMPTS) {
+      SFX.wrong();
       setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:sel.map(s=>s.letter).join("")}),600);
     } else {
-      // Wrong but can retry — reset after brief flash
+      SFX.wrong();
       setTimeout(()=>{
         setSelected([]);
         setTiles(buildLetterTiles(cara.answer));
@@ -699,7 +710,7 @@ export default function App() {
   const [sessionStart, setSessionStart] = useState(Date.now());
 
 
-  useEffect(()=>{ mp.init(); },[]);
+  useEffect(()=>{ mp.init(); SFX.loadPref(); },[]);
 
   const cara   = CARAS[index];
   const isLast = index===CARAS.length-1;
