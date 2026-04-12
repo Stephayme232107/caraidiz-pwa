@@ -493,20 +493,37 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft, se
 // ─── START ────────────────────────────────────────────────────
 function StartScreen({ onStart }) {
   const best=loadJSON("crz_best",0);
+
+  // Deep link detection: ?c=correct-total-score
+  const params=new URLSearchParams(window.location.search);
+  const challenge=params.get("c");
+  let challenger=null;
+  if(challenge){
+    const [fc,ft,fs]=challenge.split("-").map(Number);
+    if(!isNaN(fc)&&!isNaN(ft)&&!isNaN(fs)) challenger={correct:fc,total:ft,score:fs};
+  }
+
   return (
     <div className="app" style={{justifyContent:"center",padding:"16px"}}>
       <div className="start-card">
-        <div className="start-bg">
+        {challenger&&(
+          <div style={{background:"linear-gradient(135deg,rgba(255,107,53,0.15),rgba(255,138,101,0.08))",border:"1px solid rgba(255,107,53,0.4)",borderRadius:"20px 20px 0 0",padding:"14px 20px",textAlign:"center",borderBottom:"1px solid rgba(255,107,53,0.2)"}}>
+            <div style={{fontSize:20,marginBottom:4}}>🔥</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".06em",color:"#FF8A65",marginBottom:3}}>YOUR FRIEND GOT {challenger.correct}/{challenger.total}</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontWeight:600}}>Beat {challenger.correct}/{challenger.total} to win 👊</div>
+          </div>
+        )}
+        <div className="start-bg" style={challenger?{borderRadius:0}:{}}>
           <div className="start-glow"/>
           <div className="start-gem">💎</div>
           <div className="start-logo">CARAIDIZ</div>
           <div className="start-tag">watching becomes playing</div>
-          <div className="start-badge">💎 6 Caras to beat</div>
-          <div className="start-count" style={{marginTop:6}}>Can you beat them all?</div>
-          {best>0&&<div style={{marginTop:8,fontSize:11,color:"rgba(128,222,234,0.6)"}}>Your best: {best} pts</div>}
+          {!challenger&&<div className="start-badge">💎 6 Caras to beat</div>}
+          {!challenger&&<div className="start-count" style={{marginTop:6}}>Can you beat them all?</div>}
+          {!challenger&&best>0&&<div style={{marginTop:8,fontSize:11,color:"rgba(128,222,234,0.6)"}}>Your best: {best} pts</div>}
         </div>
         <div className="start-body">
-          <button className="start-btn" onClick={onStart}>START PLAYING →</button>
+          <button className="start-btn" onClick={onStart} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"START PLAYING →"}</button>
           <div style={{textAlign:"center",fontSize:11,color:"#8888AA",marginTop:10}}>No signup · Free · ~3 min</div>
         </div>
       </div>
@@ -548,7 +565,14 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   },[]);
 
   function share(){
-    navigator.clipboard.writeText(`💎 CARAIDIZ\n\nI got ${correct}/6 — can you beat me?\n${totalScore} pts · 🔥${bestStreak} streak\n\ncaraidiz-pwa.vercel.app`).then(()=>{setCopied(true);mp.track("score_shared");setTimeout(()=>setCopied(false),2500);});
+    const link=`https://caraidiz-pwa.vercel.app/?c=${correct}-${CARAS.length}-${totalScore}`;
+    const text=`I got ${correct}/6 on Caraidiz 💎 Think you can beat me?\n${link}`;
+    mp.track("score_shared",{correct,score:totalScore,streak:bestStreak});
+    if(navigator.share){
+      navigator.share({text}).catch(()=>{});
+    } else {
+      navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
+    }
   }
 
   return (
