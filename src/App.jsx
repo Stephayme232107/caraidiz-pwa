@@ -670,7 +670,7 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
     saveJSON("crz_sessions",s.slice(-100));
   },[]);
   function share(){
-    const link=`https://caraidiz-pwa.vercel.app/?c=${correct}-${CARAS.length}-${totalScore}`;
+    const link=`https://caracaraidiz.app/?c=${correct}-${CARAS.length}-${totalScore}`;
     const text=`I got ${correct}/${CARAS.length} on Caraidiz 💎 Think you can beat me?\n${link}`;
     mp.track("score_shared",{correct,score:totalScore,streak:bestStreak});
     if(navigator.share){ navigator.share({text}).catch(()=>{}); }
