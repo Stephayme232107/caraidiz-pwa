@@ -346,7 +346,7 @@ const G = `
 `;
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, height="34vh", frozen=false }) {
+function VideoBlock({ cara, height="40vh", frozen=false }) {
   const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
@@ -702,6 +702,15 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   );
 }
 
+// ─── VIDEO HEIGHT (adapts to answer length) ───────────────────
+function videoHeight(cara) {
+  const letters = cara.answer.replace(/[^a-zA-Z]/g,"").length;
+  if (letters <= 8)  return "40vh"; // Thriller, Umbrella, Gillette, Revlon
+  if (letters <= 11) return "36vh"; // JR Ewing, Olivia Pope
+  if (letters <= 14) return "30vh"; // Would you marry me, Coldplay Kiss Cam
+  return "26vh";                    // I break up with you (14 letters)
+}
+
 // ─── GAME SCREEN ──────────────────────────────────────────────
 function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttempts, onResult, onSkip }) {
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
@@ -759,7 +768,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         </div>
         {/* VIDEO + TIMER OVERLAY */}
         <div style={{position:"relative"}}>
-          <VideoBlock cara={cara} height="34vh" frozen={phase==="revealed"}/>
+          <VideoBlock cara={cara} height={videoHeight(cara)} frozen={phase==="revealed"}/>
           {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
         </div>
         {/* +15s BUTTON */}
