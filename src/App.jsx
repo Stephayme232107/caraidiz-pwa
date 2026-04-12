@@ -1,6 +1,6 @@
 // ============================================================
-//  CARAIDIZ 💎 — Full Social Loop v5
-//  Watch → Guess → Reveal → React → Continue
+//  CARAIDIZ 💎 — v6
+//  Fixed video layout · Big timer · +15s · Uniform tiles · Brand mode
 // ============================================================
 
 import { useState, useEffect, useRef } from "react";
@@ -73,8 +73,8 @@ function buildTiles(answer) {
   const aLetters=clean.replace(/ /g,"").split("");
   const uniq=[...new Set(aLetters)];
   const pool=DISTRACT.split("").filter(c=>!uniq.includes(c));
-  const dist=fy(pool).slice(0,5);
-  const all=[...aLetters.map(l=>({letter:l,isAnswer:true})),...dist.map(l=>({letter:l,isAnswer:false}))];
+  const dist=fy(pool).slice(0,8);
+  const all=[...aLetters.map(l=>({letter:l})),...dist.map(l=>({letter:l}))];
   const minRun=aLetters.length>10?4:3;
   let tiles; let att=0;
   do { tiles=fy(all).map((t,i)=>({...t,id:i,used:false})); att++; } while(att<50&&hasRun(tiles,answer,minRun));
@@ -83,7 +83,6 @@ function buildTiles(answer) {
 
 // ─── BRAND TILE BUILDER ───────────────────────────────────────
 function buildBrandTiles(competitors) {
-  // Collect letters from all competitors, max 2 of each letter
   const counts = {};
   competitors.forEach(brand => {
     brand.toUpperCase().replace(/[^A-Z]/g,"").split("").forEach(l => {
@@ -92,20 +91,15 @@ function buildBrandTiles(competitors) {
   });
   let pool = [];
   Object.entries(counts).forEach(([l,n]) => { for(let i=0;i<n;i++) pool.push(l); });
-  // Add distractors to reach ~16 tiles
   const used = new Set(pool);
   const dist = fy("BCDFGHJKLMNPQRSTVWXYZ".split("").filter(c=>!used.has(c)));
-  const need = Math.max(0, 16 - pool.length);
-  pool = [...pool, ...dist.slice(0, need)];
-  // Shuffle — all tiles look identical (no isAnswer distinction)
+  pool = [...pool, ...dist.slice(0, Math.max(0, 16 - pool.length))];
   return fy(pool).map((letter,i) => ({id:i, letter, used:false}));
 }
-
 function isBrandCorrect(guess, cara) {
   if (!cara.competitors) return norm(guess)===norm(cara.answer);
   return cara.competitors.some(c => norm(guess)===norm(c));
 }
-
 function getAcceptedBrand(guess, cara) {
   if (!cara.competitors) return cara.answer;
   return cara.competitors.find(c => norm(guess)===norm(c)) || cara.answer;
@@ -113,84 +107,66 @@ function getAcceptedBrand(guess, cara) {
 
 // ─── DATA ─────────────────────────────────────────────────────
 const CARAS = [
-  { id:1, category:"Song",               answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",          videoUrl:`${CDN}/thriller.mp4.mp4`,   firstGuessRate:61, egoLine:"Only 39% get this on first try" },
-  { id:2, category:"Phrase",             answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",               videoUrl:`${CDN}/i-break-up.mp4.mp4`, firstGuessRate:43, egoLine:"You're doing better than 70% 🔥" },
-  { id:3, category:"Brand",              answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,     firstGuessRate:68, egoLine:"Only 32% get this first try",
-    competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
-  { id:4, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",        videoUrl:`${CDN}/jr-ewing.mp4.mp4`,   firstGuessRate:28, egoLine:"Less than 30% get this 👑" },
-  { id:5, category:"Phrase",             answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",          videoUrl:`${CDN}/marry-me.mp4.mp4`,   firstGuessRate:55, egoLine:"Top 20% if you got this 🔥" },
-  { id:6, category:"Bonus",              answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,   firstGuessRate:22, egoLine:"TOP 5% — only legends get this 💎" },
+  { id:1, category:"Song",              answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",     videoUrl:`${CDN}/thriller.mp4.mp4`,   firstGuessRate:61 },
+  { id:2, category:"Phrase",            answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",          videoUrl:`${CDN}/i-break-up.mp4.mp4`, firstGuessRate:43 },
+  { id:3, category:"Brand",             answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",    videoUrl:`${CDN}/revlon.mp4.mp4`,     firstGuessRate:68, competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
+  { id:4, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",   videoUrl:`${CDN}/jr-ewing.mp4.mp4`,   firstGuessRate:28 },
+  { id:5, category:"Phrase",            answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",     videoUrl:`${CDN}/marry-me.mp4.mp4`,   firstGuessRate:55 },
+  { id:6, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸", videoUrl:`${CDN}/coldplay.mp4.mp4`,   firstGuessRate:22 },
 ];
 
 const MAX_ATTEMPTS   = 3;
 const TIMER_DURATION = 30;
+const EXTEND_SECS    = 15;
+const EXTEND_PENALTY = 20;
 
 const CAT_COLORS = { Song:"#C084FC", Brand:"#FF6B9D", Phrase:"#FF8A65", "TV Show Character":"#F472B6", Bonus:"#FACC15", Sport:"#4ADE80", Film:"#60A5FA", "TV Show":"#FACC15" };
 const CAT_EMOJI  = { Song:"🎵", Brand:"✨", Phrase:"💬", "TV Show Character":"📺", Bonus:"💎", Sport:"🏆", Film:"🎬", "TV Show":"📺" };
-const DIFF_COLORS= { easy:"#4ADE80", medium:"#FACC15", hard:"#FF8A65", expert:"#F472B6" };
 
-// ─── DYNAMIC COMMENTS ─────────────────────────────────────────
+// ─── COMMENTS ─────────────────────────────────────────────────
 const CARA_FLAVOR = {
-  1:{correct:"THRILLER omg i screamed 🕺",       wrong:"😭 I said beat it wtf"},
-  2:{correct:"i break up with you LMAOOO 💔",    wrong:"wait is it we need to talk??"},
-  3:{correct:"REVLON instantly knew 💅",          wrong:"loreal?? maybelline?? 😭"},
-  4:{correct:"JR EWING DALLAS ERA 🤠",            wrong:"no idea who this is ngl 😅"},
-  5:{correct:"WOULD YOU MARRY ME crying rn 💍",  wrong:"is it a proposal phrase??"},
-  6:{correct:"COLDPLAY KISS CAM iconic 🎸😂",    wrong:"coldplay concert?? something with coldplay"},
+  1:{correct:"THRILLER omg i screamed 🕺",      wrong:"😭 I said beat it wtf"},
+  2:{correct:"i break up with you LMAOOO 💔",   wrong:"wait is it we need to talk??"},
+  3:{correct:"REVLON instantly knew 💅",         wrong:"loreal?? maybelline?? 😭"},
+  4:{correct:"JR EWING DALLAS ERA 🤠",           wrong:"no idea who this is ngl 😅"},
+  5:{correct:"WOULD YOU MARRY ME crying rn 💍", wrong:"is it a proposal phrase??"},
+  6:{correct:"COLDPLAY KISS CAM iconic 🎸😂",   wrong:"coldplay concert?? something with coldplay"},
 };
-const TEASE_COMMENTS = [
-  "nah this one is hard…",
-  "I got it instantly",
-  "ok I give up lmao",
-  "wait wait wait…",
-  "this is so obvious omg",
-];
-
-// Brand social feed — simulates other players guessing
+const TEASE_COMMENTS = ["nah this one is hard…","I got it instantly","ok I give up lmao","wait wait wait…","this is so obvious omg"];
 const BRAND_FEEDS = {
-  3: [
-    {avatar:"💅", text:"loreal ✓",       type:"correct"},
-    {avatar:"😂", text:"maybelline??",    type:"wrong"},
-    {avatar:"👀", text:"fenty beauty omg ✓", type:"correct"},
-    {avatar:"😭", text:"i said sephora 💀", type:"wrong"},
-    {avatar:"✨", text:"mac ✓",           type:"correct"},
-    {avatar:"🤷", text:"nyx??",           type:"wrong"},
+  3:[
+    {avatar:"💅",text:"loreal ✓",type:"correct"},
+    {avatar:"😂",text:"maybelline??",type:"wrong"},
+    {avatar:"👀",text:"fenty beauty omg ✓",type:"correct"},
+    {avatar:"😭",text:"i said sephora 💀",type:"wrong"},
+    {avatar:"✨",text:"mac ✓",type:"correct"},
+    {avatar:"🤷",text:"nyx??",type:"wrong"},
   ]
 };
 
 function getComments(caraId, correct, timedOut, speedBonus, timeLeft, acceptedAnswer) {
-  // Brand caras get special social feed
   if (BRAND_FEEDS[caraId]) {
-    const feed = BRAND_FEEDS[caraId];
-    const base = fy(feed).slice(0,3);
-    if (correct && acceptedAnswer) {
-      base.unshift({avatar:"🧑", text:`${acceptedAnswer.toLowerCase()} ✓`, type:"correct"});
-    } else if (!correct) {
-      base.unshift({avatar:"😬", text:"this one had me 💀", type:"wrong"});
-    }
+    const base = fy(BRAND_FEEDS[caraId]).slice(0,3);
+    if (correct && acceptedAnswer) base.unshift({avatar:"🧑",text:`${acceptedAnswer.toLowerCase()} ✓`,type:"correct"});
+    else base.unshift({avatar:"😬",text:"this one had me 💀",type:"wrong"});
     return base.slice(0,4);
   }
   const f = CARA_FLAVOR[caraId];
-  if (timedOut) return [
-    {avatar:"⏱", text:"the clock got you 💀", type:"wrong"},
-    {avatar:"😅", text:"bro was thinking too hard", type:"wrong"},
-  ];
+  if (timedOut) return [{avatar:"⏱",text:"the clock got you 💀",type:"wrong"},{avatar:"😅",text:"bro was thinking too hard",type:"wrong"}];
   if (correct) {
     const perf = (speedBonus||timeLeft>20)
       ? [{avatar:"😳",text:"you're fast omg",type:"correct"},{avatar:"🔥",text:"1 try?? crazy",type:"correct"}]
       : timeLeft>10
       ? [{avatar:"🔥",text:"first try?? insane",type:"correct"},{avatar:"😭",text:"ok genius relax 😭",type:"correct"}]
       : [{avatar:"👀",text:"took you long enough 😅",type:"neutral"},{avatar:"😅",text:"still got it though 🔥",type:"correct"}];
-    return [...perf.slice(0,1), {avatar:"🧑",text:f?.correct||"got it! 🔥",type:"correct"}];
+    return [...perf.slice(0,1),{avatar:"🧑",text:f?.correct||"got it! 🔥",type:"correct"}];
   }
-  return [
-    {avatar:"😭",text:"nah this one was easy",type:"wrong"},
-    {avatar:"😬",text:f?.wrong||"tough one",type:"wrong"},
-  ];
+  return [{avatar:"😭",text:"nah this one was easy",type:"wrong"},{avatar:"😬",text:f?.wrong||"tough one",type:"wrong"}];
 }
 
-function scoreFor(attempt, streak, speed) {
-  return (attempt===1?100:attempt===2?60:30)+(streak>=3?50:0)+(speed?25:0);
+function scoreFor(attempt, streak, speed, extended) {
+  const base = (attempt===1?100:attempt===2?60:30)+(streak>=3?50:0)+(speed?25:0);
+  return Math.max(0, base-(extended?EXTEND_PENALTY:0));
 }
 
 // ─── STYLES ───────────────────────────────────────────────────
@@ -200,9 +176,13 @@ const G = `
   html,body{height:100%;background:#0A0A0F;font-family:'DM Sans',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
   input::placeholder{color:#8888AA}
 
-  /* ── APP SHELL ── */
-  .app{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 0 32px;background:#0A0A0F}
-  .card{width:100%;max-width:420px;background:#121220;display:flex;flex-direction:column;min-height:100svh;position:relative;overflow:hidden}
+  .app{height:100svh;display:flex;flex-direction:column;align-items:center;background:#0A0A0F;overflow:hidden}
+  .card{width:100%;max-width:420px;background:#121220;display:flex;flex-direction:column;height:100svh;overflow:hidden}
+
+  /* ── GAME LAYOUT: fixed top + scrollable bottom ── */
+  .game-top{flex-shrink:0;display:flex;flex-direction:column}
+  .game-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;padding-bottom:12px}
+  .game-scroll::-webkit-scrollbar{display:none}
 
   /* ── START ── */
   .start-card{background:#1A1A2E;border-radius:28px;width:calc(100% - 32px);max-width:420px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);box-shadow:0 32px 80px rgba(0,0,0,0.7);animation:fadeUp .3s ease-out;margin:16px}
@@ -218,44 +198,48 @@ const G = `
   .start-btn:active{transform:scale(.97)}
 
   /* ── TOP BAR ── */
-  .topbar{padding:12px 16px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .topbar{padding:10px 16px 4px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
   .logo-s{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.1em}
   .logo-s span{color:#80DEEA}
   .score-pill{background:rgba(255,255,255,0.08);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px}
   .streak-n{color:#FF6B35;font-weight:800;font-size:13px}
 
   /* ── PROGRESS ── */
-  .prog{padding:0 16px 6px;flex-shrink:0}
-  .prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:#8888AA;margin-bottom:4px;letter-spacing:.06em;text-transform:uppercase}
-  .prog-track{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:6px}
+  .prog{padding:0 16px 4px;flex-shrink:0}
+  .prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:#8888AA;margin-bottom:3px;letter-spacing:.06em;text-transform:uppercase}
+  .prog-track{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:5px}
   .prog-fill{height:100%;background:linear-gradient(90deg,#80DEEA,#C084FC);transition:width .6s ease}
   .pips{display:flex;gap:3px}
   .pip{flex:1;height:4px;border-radius:2px;transition:background .4s}
 
   /* ── VIDEO ── */
-  .vid-wrap{position:relative;flex-shrink:0;overflow:hidden;background:#000}
+  .vid-wrap{position:relative;overflow:hidden;background:#000}
   .vid-wrap video{width:100%;height:100%;object-fit:cover;display:block}
   .vid-wrap .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px;position:absolute;top:0;left:0}
   .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,rgba(18,18,32,1) 0%,transparent 100%);pointer-events:none}
-
-  /* ── VIDEO OVERLAYS ── */
   .cat-badge{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap;background:rgba(0,0,0,0.55)}
   .hint-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
   .mute-btn{position:absolute;bottom:14px;right:12px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px)}
 
-  /* ── TIMER ── */
-  .timer-bar{padding:4px 16px 2px;flex-shrink:0}
-  .timer-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;color:#8888AA}
-  .timer-secs{font-weight:800;font-size:11px;transition:color .3s}
-  .timer-secs.urgent{animation:timerPulse .5s ease-in-out infinite}
-  .timer-track{height:4px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
-  .timer-fill{height:100%;border-radius:3px;transition:width 1s linear,background .5s}
-  @keyframes timerPulse{0%,100%{opacity:1}50%{opacity:.4}}
+  /* ── BIG TIMER ── */
+  .timer-overlay{position:absolute;bottom:16px;left:14px;z-index:6;display:flex;align-items:center;gap:8px}
+  .timer-circle{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.02em;border:3px solid;backdrop-filter:blur(8px);transition:color .4s,border-color .4s,background .4s;box-shadow:0 4px 16px rgba(0,0,0,0.4)}
+  .timer-circle.ok{color:#80DEEA;border-color:#80DEEA;background:rgba(10,10,15,0.6)}
+  .timer-circle.warn{color:#FACC15;border-color:#FACC15;background:rgba(10,10,15,0.6)}
+  .timer-circle.danger{color:#FF8A65;border-color:#FF8A65;background:rgba(10,10,15,0.75);animation:timerPulse .5s ease-in-out infinite}
+  .timer-track{height:3px;background:rgba(255,255,255,0.08);flex-shrink:0;overflow:hidden}
+  .timer-fill-bar{height:100%;transition:width 1s linear,background .5s}
+  @keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.08)}}
+
+  /* ── +15s BUTTON ── */
+  .extend-btn{margin:5px 16px 0;padding:9px 16px;background:rgba(250,204,21,0.1);border:1.5px solid rgba(250,204,21,0.6);border-radius:14px;color:#FACC15;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.08em;cursor:pointer;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px;animation:extendPulse .8s ease-in-out infinite;flex-shrink:0}
+  .extend-btn:active{transform:scale(.97)}
+  @keyframes extendPulse{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0.35)}50%{box-shadow:0 0 0 8px rgba(250,204,21,0)}}
 
   /* ── COMMENTS LOCKED ── */
   .comments-locked{padding:8px 16px 4px;flex-shrink:0}
-  .lock-label{font-size:10px;color:#8888AA;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-  .blur-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;opacity:0.6}
+  .lock-label{font-size:10px;color:#8888AA;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+  .blur-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;opacity:0.6}
   .blur-avatar{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.07);flex-shrink:0}
   .blur-line{height:10px;border-radius:5px;background:rgba(255,255,255,0.07);filter:blur(3px)}
   .lock-cta{text-align:center;font-size:11px;color:rgba(128,222,234,0.7);font-weight:700;padding:2px 0 4px;letter-spacing:.03em}
@@ -270,8 +254,7 @@ const G = `
   .cmt-text.correct{color:#4ADE80}
   .cmt-text.wrong{color:rgba(255,255,255,0.7)}
   .cmt-text.neutral{color:#FF8A65}
-  .cmt-add{margin-top:4px;width:100%;background:rgba(255,255,255,0.05);border:1.5px solid rgba(128,222,234,0.25);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color .2s}
-  .cmt-add:active{border-color:rgba(128,222,234,0.5)}
+  .cmt-add{margin-top:4px;width:100%;background:rgba(255,255,255,0.05);border:1.5px solid rgba(128,222,234,0.25);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer}
   .cmt-add-text{font-size:13px;color:#8888AA;flex:1}
   .cmt-input-active{width:100%;background:rgba(255,255,255,0.06);border:1.5px solid #80DEEA;border-radius:12px;padding:10px 14px;color:#fff;font-size:14px;font-family:inherit;outline:none;caret-color:#80DEEA;margin-top:4px}
 
@@ -285,20 +268,22 @@ const G = `
   .word-gap{width:10px}
   @keyframes slotPop{0%{transform:scale(.75)}100%{transform:scale(1)}}
 
-  /* ── TILE GRID ── */
+  /* ── TILES (all uniform — no .dist differentiation) ── */
   .tiles-wrap{padding:4px 12px 8px;flex-shrink:0}
   .tiles-grid{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:7px}
   .tile{width:34px;height:38px;border-radius:10px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;cursor:pointer;transition:transform .1s,opacity .15s;user-select:none;-webkit-user-select:none}
   .tile:active{transform:scale(.85)}
   .tile.used{opacity:.15;pointer-events:none}
-  .tile.dist{color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.1)}
   .tile-actions{display:flex;gap:7px;justify-content:center}
-  .t-btn{height:34px;padding:0 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.13);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .1s}
+  .t-btn{height:34px;padding:0 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.13);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
   .t-btn:active{transform:scale(.95)}
   .t-btn.del{border-color:rgba(255,138,101,0.3);color:#FF8A65;background:rgba(255,138,101,0.07)}
   .t-btn.skip{color:#8888AA;font-size:11px}
 
-  /* ── REVEAL OVERLAY ── */
+  /* ── BRAND GUESS BAR ── */
+  .brand-bar{margin:6px 16px 4px;padding:10px 14px;min-height:46px;background:rgba(255,255,255,0.04);border-radius:14px;display:flex;align-items:center;flex-shrink:0;transition:border-color .2s}
+
+  /* ── REVEAL ── */
   .reveal-bar{padding:10px 16px 8px;text-align:center;flex-shrink:0;animation:slideUp .25s ease-out}
   .reveal-label{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
   .reveal-label.ok{color:#4ADE80}
@@ -320,6 +305,7 @@ const G = `
   .next-btn{width:100%;background:#80DEEA;color:#0A0A0F;border:none;border-radius:14px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.06em;cursor:pointer;animation:pulseCTA 1.5s ease-in-out 1s infinite}
   .next-btn:active{transform:scale(.97)}
   .next-tease{text-align:center;font-size:11px;color:#8888AA;margin-top:6px}
+  @keyframes pulseCTA{0%,100%{box-shadow:0 0 0 0 rgba(128,222,234,0.4)}50%{box-shadow:0 0 0 10px rgba(128,222,234,0)}}
 
   /* ── PAUSE ── */
   .pause-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:32px 20px}
@@ -329,7 +315,7 @@ const G = `
   .level-up{background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.3);border-radius:12px;padding:11px 16px;font-size:13px;font-weight:700;color:#FACC15}
 
   /* ── END ── */
-  .end-screen{display:flex;flex-direction:column;align-items:center;padding:28px 20px 24px;text-align:center;overflow-y:auto}
+  .end-screen{display:flex;flex-direction:column;align-items:center;padding:28px 20px 24px;text-align:center;overflow-y:auto;flex:1}
   .etrophy{font-size:52px;margin-bottom:6px;animation:float 3s ease-in-out infinite}
   .etitle{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.08em;margin-bottom:4px}
   .erank{display:inline-block;background:linear-gradient(135deg,#FACC15,#FF8A65);color:#0A0A0F;padding:4px 16px;border-radius:20px;font-size:12px;font-weight:800;letter-spacing:.08em;margin-bottom:16px}
@@ -343,33 +329,28 @@ const G = `
   @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideDown{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-  @keyframes pulseCTA{0%,100%{box-shadow:0 0 0 0 rgba(128,222,234,0.4)}50%{box-shadow:0 0 0 10px rgba(128,222,234,0)}}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   @keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes slotPop{0%{transform:scale(.75)}100%{transform:scale(1)}}
 `;
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, height="58vh", frozen=false }) {
+function VideoBlock({ cara, height="40vh", frozen=false }) {
   const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
   const em  = CAT_EMOJI[cara.category]||"💎";
-
   useEffect(() => {
     setMuted(true);
     if (ref.current) { ref.current.muted=true; ref.current.play().catch(()=>{}); }
     if (frozen&&ref.current) ref.current.pause();
   }, [cara.id, frozen]);
-
   function toggle() {
     SFX.init();
     const n=!muted; setMuted(n); SFX._on=n; saveJSON("crz_sfx",n);
     if (ref.current) ref.current.muted=n;
   }
-
   return (
-    <div className="vid-wrap" style={{height,flexShrink:0}}>
+    <div className="vid-wrap" style={{height}}>
       {cara.videoUrl
         ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline style={{height:"100%"}}/>
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
@@ -385,13 +366,31 @@ function VideoBlock({ cara, height="58vh", frozen=false }) {
   );
 }
 
+// ─── TIMER OVERLAY (on video) ─────────────────────────────────
+function TimerOverlay({ timeLeft, maxTime }) {
+  const cls  = timeLeft>15?"ok":timeLeft>8?"warn":"danger";
+  const tCol = timeLeft>15?"#80DEEA":timeLeft>8?"#FACC15":"#FF8A65";
+  const pct  = Math.min(100,(timeLeft/maxTime)*100);
+  return (
+    <>
+      <div className="timer-overlay">
+        <div className={`timer-circle ${cls}`}>{timeLeft}</div>
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>sec</div>
+      </div>
+      <div className="timer-track">
+        <div className="timer-fill-bar" style={{width:`${pct}%`,background:tCol}}/>
+      </div>
+    </>
+  );
+}
+
 // ─── COMMENTS LOCKED ──────────────────────────────────────────
 function CommentsLocked() {
   const teases = [TEASE_COMMENTS[Math.floor(Math.random()*3)], TEASE_COMMENTS[3+Math.floor(Math.random()*2)]];
   return (
     <div className="comments-locked">
       <div className="lock-label">Comments</div>
-      {teases.map((t,i) => (
+      {teases.map((t,i)=>(
         <div key={i} className="blur-row">
           <div className="blur-avatar"/>
           <div className="blur-line" style={{width:`${50+i*20}%`}}/>
@@ -408,14 +407,8 @@ function CommentsRevealed({ caraId, result }) {
   const [comment, setComment] = useState("");
   const inputRef = useRef(null);
   const comments = getComments(caraId, result.correct, result.timedOut, result.speedBonus, result.timeLeft||0, result.acceptedAnswer);
-  const prefill  = result.correct ? "Got it 😎 — " : `I thought it was ___ 😂 — `;
-
-  function openComment() {
-    setCommenting(true);
-    setComment(prefill);
-    setTimeout(()=>inputRef.current?.focus(),100);
-  }
-
+  const prefill  = result.correct ? "Got it 😎 — " : "I thought it was ___ 😂 — ";
+  function openComment() { setCommenting(true); setComment(prefill); setTimeout(()=>inputRef.current?.focus(),100); }
   return (
     <div className="comments-revealed">
       <div className="comments-header"><span>💬</span><span>What others said</span></div>
@@ -426,10 +419,7 @@ function CommentsRevealed({ caraId, result }) {
         </div>
       ))}
       {!commenting
-        ? <div className="cmt-add" onClick={openComment}>
-            <span style={{fontSize:16}}>💬</span>
-            <span className="cmt-add-text">Add your reaction…</span>
-          </div>
+        ? <div className="cmt-add" onClick={openComment}><span style={{fontSize:16}}>💬</span><span className="cmt-add-text">Add your reaction…</span></div>
         : <input ref={inputRef} className="cmt-input-active" value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setCommenting(false)} placeholder="Your reaction…"/>
       }
     </div>
@@ -440,29 +430,24 @@ function CommentsRevealed({ caraId, result }) {
 function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
   const [tiles,    setTiles]    = useState(()=>buildBrandTiles(cara.competitors));
   const [selected, setSelected] = useState([]);
-  const [flash,    setFlash]    = useState(null); // null | "wrong"
+  const [flash,    setFlash]    = useState(null);
   const [showHint, setShowHint] = useState(false);
 
   useEffect(()=>{ setTiles(buildBrandTiles(cara.competitors)); setSelected([]); setFlash(null); setShowHint(false); },[cara.id]);
   useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
 
   function tap(tile) {
-    if (tile.used || selected.length>=12) return;
-    SFX.tap();
+    if (tile.used||selected.length>=12) return; SFX.tap();
     setSelected(p=>[...p,{tileId:tile.id,letter:tile.letter}]);
     setTiles(p=>p.map(t=>t.id===tile.id?{...t,used:true}:t));
   }
-
   function del() {
-    if (!selected.length) return;
-    SFX.del();
+    if (!selected.length) return; SFX.del();
     const rem=selected[selected.length-1];
     setSelected(p=>p.slice(0,-1));
     setTiles(p=>p.map(t=>t.id===rem.tileId?{...t,used:false}:t));
   }
-
   function shuffle() { setSelected([]); setTiles(buildBrandTiles(cara.competitors)); }
-
   function submit() {
     if (selected.length<2) return;
     const guess=selected.map(s=>s.letter).join("");
@@ -470,52 +455,40 @@ function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLef
     const accepted=ok?getAcceptedBrand(guess,cara):null;
     const speed=ok&&timeLeft>20;
     const na=attempts+1; setAttempts(na);
-    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft,guess:guess.toLowerCase()});
+    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,guess:guess.toLowerCase()});
     if (ok) {
       SFX.correct();
       setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:guess,acceptedAnswer:accepted}),500);
     } else if (na>=MAX_ATTEMPTS) {
-      SFX.wrong();
-      setFlash("wrong");
+      SFX.wrong(); setFlash("wrong");
       setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess}),600);
     } else {
-      SFX.wrong();
-      setFlash("wrong");
+      SFX.wrong(); setFlash("wrong");
       setTimeout(()=>{ setSelected([]); setTiles(buildBrandTiles(cara.competitors)); setFlash(null); },700);
     }
   }
-
   const guess=selected.map(s=>s.letter).join("");
-
   return (
     <>
-      {showHint&&<div style={{margin:"0 16px 4px",padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65",flexShrink:0}}>💡 {cara.hint}</div>}
-
-      {/* GUESS DISPLAY BAR */}
-      <div style={{margin:"6px 16px 4px",padding:"10px 14px",minHeight:46,background:"rgba(255,255,255,0.04)",border:`1.5px solid ${flash==="wrong"?"rgba(255,138,101,0.6)":"rgba(128,222,234,0.2)"}`,borderRadius:14,display:"flex",alignItems:"center",gap:2,flexShrink:0,animation:flash==="wrong"?"shake .3s ease":undefined}}>
+      {showHint&&<div style={{margin:"6px 16px 4px",padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65",flexShrink:0}}>💡 {cara.hint}</div>}
+      <div className="brand-bar" style={{border:`1.5px solid ${flash==="wrong"?"rgba(255,138,101,0.6)":"rgba(128,222,234,0.2)"}`,animation:flash==="wrong"?"shake .3s ease":undefined}}>
         {guess
           ? <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:".12em",color:flash==="wrong"?"#FF8A65":"#80DEEA"}}>{guess}</span>
           : <span style={{fontSize:12,color:"#8888AA"}}>Tap letters to guess a brand…</span>
         }
       </div>
-
-      {/* ATTEMPT DOTS */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"2px 16px 4px",flexShrink:0}}>
         <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>{attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:"Guess any brand you see"}</div>
         <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.12)"}}/>)}</div>
       </div>
-
-      {/* TILES — all uniform */}
       <div className="tiles-wrap">
         <div className="tiles-grid">
-          {tiles.map(t=>(
-            <div key={t.id} className={`tile${t.used?" used":""}`} onClick={()=>tap(t)}>{t.letter}</div>
-          ))}
+          {tiles.map(t=><div key={t.id} className={`tile${t.used?" used":""}`} onClick={()=>tap(t)}>{t.letter}</div>)}
         </div>
         <div className="tile-actions">
           <button className="t-btn" onClick={shuffle}>🔀 Shuffle</button>
           <button className="t-btn del" onClick={del}>⌫ Delete</button>
-          <button className="t-btn" style={{background:selected.length>=2?"rgba(128,222,234,0.15)":"rgba(255,255,255,0.03)",borderColor:selected.length>=2?"rgba(128,222,234,0.5)":"rgba(255,255,255,0.1)",color:selected.length>=2?"#80DEEA":"#8888AA",transition:"all .2s"}} onClick={submit}>✓ Guess</button>
+          <button className="t-btn" style={{background:selected.length>=2?"rgba(128,222,234,0.15)":"rgba(255,255,255,0.03)",borderColor:selected.length>=2?"rgba(128,222,234,0.5)":"rgba(255,255,255,0.1)",color:selected.length>=2?"#80DEEA":"#8888AA"}} onClick={submit}>✓ Guess</button>
           <button className="t-btn skip" onClick={onSkip}>Skip</button>
         </div>
       </div>
@@ -524,12 +497,11 @@ function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLef
 }
 
 // ─── TILE INPUT ───────────────────────────────────────────────
-function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft, setTimeLeft }) {
+function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
   const answer      = cara.answer.toUpperCase();
   const answerClean = answer.replace(/[^A-Z ]/g,"");
   const words       = answerClean.split(" ");
   const totalL      = answerClean.replace(/ /g,"").length;
-
   const [tiles,    setTiles]    = useState(()=>buildTiles(cara.answer));
   const [selected, setSelected] = useState([]);
   const [slotState,setSlotState]= useState(null);
@@ -539,14 +511,12 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft, se
   useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
 
   function tap(tile) {
-    if (tile.used||selected.length>=totalL) return;
-    SFX.tap();
+    if (tile.used||selected.length>=totalL) return; SFX.tap();
     const ns=[...selected,{tileId:tile.id,letter:tile.letter}];
     setSelected(ns);
     setTiles(p=>p.map(t=>t.id===tile.id?{...t,used:true}:t));
     if (ns.length===totalL) check(ns);
   }
-
   function tapSlot(idx) {
     if (idx>=selected.length) return;
     const rem=selected[idx];
@@ -554,18 +524,14 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft, se
     setTiles(p=>p.map(t=>t.id===rem.tileId?{...t,used:false}:t));
     setSlotState(null);
   }
-
   function del() {
-    if (!selected.length) return;
-    SFX.del();
+    if (!selected.length) return; SFX.del();
     const rem=selected[selected.length-1];
     setSelected(p=>p.slice(0,-1));
     setTiles(p=>p.map(t=>t.id===rem.tileId?{...t,used:false}:t));
     setSlotState(null);
   }
-
   function shuffle() { setSelected([]); setTiles(buildTiles(cara.answer)); setSlotState(null); }
-
   function check(sel) {
     const guess=sel.map(s=>s.letter).join("").toLowerCase();
     const ok=norm(guess)===norm(cara.answer);
@@ -584,16 +550,11 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft, se
       setTimeout(()=>{ setSelected([]); setTiles(buildTiles(cara.answer)); setSlotState(null); },700);
     }
   }
-
-  // Build word slots
   let si=0;
   const wordSlots=words.map(w=>w.split("").map(()=>{ const s=selected[si]||null; si++; return s; }));
-
   return (
     <>
-      {showHint&&<div style={{margin:"0 16px 4px",padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65",flexShrink:0}}>💡 {cara.hint}</div>}
-
-      {/* SLOTS */}
+      {showHint&&<div style={{margin:"6px 16px 4px",padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65",flexShrink:0}}>💡 {cara.hint}</div>}
       <div className="slots-wrap">
         <div style={{display:"flex",alignItems:"center",gap:10,justifyContent:"space-between",marginBottom:5}}>
           <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>
@@ -613,13 +574,9 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft, se
           ))}
         </div>
       </div>
-
-      {/* TILES */}
       <div className="tiles-wrap">
         <div className="tiles-grid">
-          {tiles.map(t=>(
-            <div key={t.id} className={`tile ${t.used?"used":""} ${!t.isAnswer?"dist":""}`} onClick={()=>tap(t)}>{t.letter}</div>
-          ))}
+          {tiles.map(t=><div key={t.id} className={`tile${t.used?" used":""}`} onClick={()=>tap(t)}>{t.letter}</div>)}
         </div>
         <div className="tile-actions">
           <button className="t-btn" onClick={shuffle}>🔀 Shuffle</button>
@@ -634,8 +591,6 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft, se
 // ─── START ────────────────────────────────────────────────────
 function StartScreen({ onStart }) {
   const best=loadJSON("crz_best",0);
-
-  // Deep link detection: ?c=correct-total-score
   const params=new URLSearchParams(window.location.search);
   const challenge=params.get("c");
   let challenger=null;
@@ -643,7 +598,6 @@ function StartScreen({ onStart }) {
     const [fc,ft,fs]=challenge.split("-").map(Number);
     if(!isNaN(fc)&&!isNaN(ft)&&!isNaN(fs)) challenger={correct:fc,total:ft,score:fs};
   }
-
   return (
     <div className="app" style={{justifyContent:"center",padding:"16px"}}>
       <div className="start-card">
@@ -695,7 +649,6 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   const pct=Math.round(correct/CARAS.length*100);
   const ts=Math.round((Date.now()-sessionStart)/1000);
   const ego=pct===100?"Less than 5% get a perfect score.":pct>=80?"Better than 80% of players.":pct>=60?"Most players don't make it this far.":bestStreak>=3?`That ${bestStreak}-streak though 🔥`:"Each play makes you sharper.";
-
   useEffect(()=>{
     const prev=loadJSON("crz_best",0);
     if(totalScore>prev){saveJSON("crz_best",totalScore);setIsNew(true);}
@@ -704,18 +657,13 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
     s.push({date:new Date().toISOString(),score:totalScore,correct,streak:bestStreak,time:ts});
     saveJSON("crz_sessions",s.slice(-100));
   },[]);
-
   function share(){
     const link=`https://caraidiz-pwa.vercel.app/?c=${correct}-${CARAS.length}-${totalScore}`;
     const text=`I got ${correct}/6 on Caraidiz 💎 Think you can beat me?\n${link}`;
     mp.track("score_shared",{correct,score:totalScore,streak:bestStreak});
-    if(navigator.share){
-      navigator.share({text}).catch(()=>{});
-    } else {
-      navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});
-    }
+    if(navigator.share){ navigator.share({text}).catch(()=>{}); }
+    else { navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);}); }
   }
-
   return (
     <div className="card">
       <div className="end-screen">
@@ -744,128 +692,129 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
 
 // ─── GAME SCREEN ──────────────────────────────────────────────
 function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttempts, onResult, onSkip }) {
-  const [timeLeft,  setTimeLeft]  = useState(TIMER_DURATION);
-  const [phase,     setPhase]     = useState("playing"); // playing | revealed
-  const [result,    setResult]    = useState(null);
+  const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
+  const [phase,    setPhase]    = useState("playing");
+  const [result,   setResult]   = useState(null);
+  const [extended, setExtended] = useState(false);
+  const maxTime = extended ? TIMER_DURATION + EXTEND_SECS : TIMER_DURATION;
 
-  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); },[cara.id]);
+  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); },[cara.id]);
 
-  // Timer
   useEffect(()=>{
     if (phase!=="playing") return;
     if (timeLeft<=0) {
       SFX.timeUp();
       mp.track("timer_expired",{cara_id:cara.id});
-      const r={correct:false,attempts:attempts||1,speedBonus:false,timedOut:true,timeLeft:0,lastGuess:""};
-      setResult(r); setPhase("revealed");
-      return;
+      const r={correct:false,attempts:attempts||1,speedBonus:false,timedOut:true,timeLeft:0,lastGuess:"",extended};
+      setResult(r); setPhase("revealed"); return;
     }
     if (timeLeft<=5) SFX.tick();
     const t=setTimeout(()=>setTimeLeft(s=>s-1),1000);
     return()=>clearTimeout(t);
   },[timeLeft,phase]);
 
-  function handleResult(res) { setResult(res); setPhase("revealed"); }
+  function handleResult(res) { setResult({...res,extended}); setPhase("revealed"); }
 
-  const pct   = (timeLeft/TIMER_DURATION)*100;
-  const tCol  = timeLeft>15?"#80DEEA":timeLeft>8?"#FACC15":"#FF8A65";
-  const urgent= timeLeft<=8;
+  function handleExtend() {
+    mp.track("timer_extended",{cara_id:cara.id,time_left:timeLeft});
+    setExtended(true);
+    setTimeLeft(t=>t+EXTEND_SECS);
+  }
 
-  const isLast    = index===total-1;
-  const nextDiff  = CARAS[index+1]?.difficulty;
-  const nextLabel = isLast?"SEE MY RESULTS 🏆":result?.correct&&streak>=3?"KEEP THE STREAK 🔥→":!result?.correct?"REDEMPTION ROUND →":"NEXT CHALLENGE 🔥";
-  const tease     = isLast?"":nextDiff==="hard"?"⚠️ Next one is harder":nextDiff==="expert"?"🔥 EXPERT LEVEL — final Cara":"💎 Next loading...";
-
-  const showScore = result&&phase==="revealed";
+  const showExtend = phase==="playing" && timeLeft<=5 && !extended;
+  const isLast     = index===total-1;
+  const nextDiff   = CARAS[index+1]?.difficulty;
+  const nextLabel  = isLast?"SEE MY RESULTS 🏆":result?.correct&&streak>=3?"KEEP THE STREAK 🔥→":!result?.correct?"REDEMPTION ROUND →":"NEXT CHALLENGE 🔥";
+  const tease      = isLast?"":nextDiff==="hard"?"⚠️ Next one is harder":nextDiff==="expert"?"🔥 EXPERT LEVEL — final Cara":"💎 Next loading...";
+  const showScore  = result&&phase==="revealed";
 
   return (
     <div className="card">
-      {/* TOP BAR */}
-      <div className="topbar">
-        <div className="logo-s">CARAI<span>DIZ</span> 💎</div>
-        <div className="score-pill">
-          {streak>=2&&<span className="streak-n">🔥 {streak}</span>}
-          <span>{totalScore} pts</span>
-        </div>
-      </div>
 
-      {/* PROGRESS */}
-      <div className="prog">
-        <div className="prog-lbl"><span>Cara {index+1} of {total}</span><span>{Math.round(index/total*100)}% done</span></div>
-        <div className="prog-track"><div className="prog-fill" style={{width:`${index/total*100}%`}}/></div>
-        <div className="pips">{CARAS.map((_,i)=><div key={i} className="pip" style={{background:i<index?"#80DEEA":i===index?"rgba(128,222,234,0.4)":"rgba(255,255,255,0.08)"}}/>)}</div>
-      </div>
-
-      {/* VIDEO */}
-      <VideoBlock cara={cara} height="52vh" frozen={phase==="revealed"}/>
-
-      {/* TIMER */}
-      {phase==="playing"&&(
-        <div className="timer-bar">
-          <div className="timer-row">
-            <span style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>Time to guess</span>
-            <span className={`timer-secs${urgent?" urgent":""}`} style={{color:tCol}}>{urgent?"⚡ ":""}{timeLeft}s</span>
+      {/* ══ TOP — always visible ══ */}
+      <div className="game-top">
+        <div className="topbar">
+          <div className="logo-s">CARAI<span>DIZ</span> 💎</div>
+          <div className="score-pill">
+            {streak>=2&&<span className="streak-n">🔥 {streak}</span>}
+            <span>{totalScore} pts</span>
           </div>
-          <div className="timer-track"><div className="timer-fill" style={{width:`${pct}%`,background:tCol}}/></div>
         </div>
-      )}
+        <div className="prog">
+          <div className="prog-lbl"><span>Cara {index+1} of {total}</span><span>{Math.round(index/total*100)}% done</span></div>
+          <div className="prog-track"><div className="prog-fill" style={{width:`${index/total*100}%`}}/></div>
+          <div className="pips">{CARAS.map((_,i)=><div key={i} className="pip" style={{background:i<index?"#80DEEA":i===index?"rgba(128,222,234,0.4)":"rgba(255,255,255,0.08)"}}/>)}</div>
+        </div>
+        {/* VIDEO + TIMER OVERLAY */}
+        <div style={{position:"relative"}}>
+          <VideoBlock cara={cara} height="40vh" frozen={phase==="revealed"}/>
+          {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
+        </div>
+        {/* +15s BUTTON */}
+        {showExtend&&(
+          <button className="extend-btn" onClick={handleExtend}>
+            ⏱ +15 secondes
+            <span style={{fontSize:11,opacity:.75,fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>(-{EXTEND_PENALTY} pts)</span>
+          </button>
+        )}
+      </div>
 
-      {/* GAMEPLAY MODE */}
-      {phase==="playing"&&(
-        <>
-          <CommentsLocked/>
-          {cara.category==="Brand"
-            ? <BrandTileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
-            : <TileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft} setTimeLeft={setTimeLeft}/>
-          }
-        </>
-      )}
+      {/* ══ SCROLL ZONE ══ */}
+      <div className="game-scroll">
 
-      {/* REVEAL MODE */}
-      {phase==="revealed"&&result&&(
-        <>
-          {/* RESULT */}
-          <div className="reveal-bar">
-            {result.lastGuess&&(
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"6px 12px",background:result.correct?"rgba(74,222,128,0.08)":"rgba(255,138,101,0.08)",border:`1px solid ${result.correct?"rgba(74,222,128,0.25)":"rgba(255,138,101,0.25)"}`,borderRadius:10}}>
-                <span style={{fontSize:10,fontWeight:800,color:result.correct?"#4ADE80":"#FF8A65",letterSpacing:".1em",textTransform:"uppercase",flexShrink:0}}>YOU:</span>
-                <span style={{fontSize:13,fontWeight:700,color:result.correct?"#4ADE80":"#FF8A65"}}>{result.lastGuess}</span>
-                <span style={{marginLeft:"auto"}}>{result.correct?"✅":"❌"}</span>
+        {/* PLAYING */}
+        {phase==="playing"&&(
+          <>
+            <CommentsLocked/>
+            {cara.category==="Brand"
+              ? <BrandTileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
+              : <TileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
+            }
+          </>
+        )}
+
+        {/* REVEALED */}
+        {phase==="revealed"&&result&&(
+          <>
+            <div className="reveal-bar">
+              {result.lastGuess&&(
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"6px 12px",background:result.correct?"rgba(74,222,128,0.08)":"rgba(255,138,101,0.08)",border:`1px solid ${result.correct?"rgba(74,222,128,0.25)":"rgba(255,138,101,0.25)"}`,borderRadius:10}}>
+                  <span style={{fontSize:10,fontWeight:800,color:result.correct?"#4ADE80":"#FF8A65",letterSpacing:".1em",textTransform:"uppercase",flexShrink:0}}>YOU:</span>
+                  <span style={{fontSize:13,fontWeight:700,color:result.correct?"#4ADE80":"#FF8A65"}}>{result.lastGuess}</span>
+                  <span style={{marginLeft:"auto"}}>{result.correct?"✅":"❌"}</span>
+                </div>
+              )}
+              <div className={`reveal-label ${result.correct?"ok":"no"}`}>{result.correct?"🎉 CORRECT!":result.timedOut?"⏱ TIME'S UP":"😅 THE ANSWER WAS…"}</div>
+              <div className="reveal-answer">{result.acceptedAnswer||cara.answer}</div>
+              {cara.competitors&&<div style={{fontSize:11,color:"#8888AA",marginTop:2,marginBottom:4}}>Also valid: {cara.competitors.filter(c=>norm(c)!==norm(result.acceptedAnswer||cara.answer)).join(" · ")}</div>}
+              {result.extended&&<div style={{fontSize:11,color:"#FACC15",marginBottom:4}}>⏱ Used +15s extension (-{EXTEND_PENALTY} pts)</div>}
+              <div className="reveal-sub">{result.correct?(result.speedBonus?"⚡ Lightning fast!":`Got it in ${result.attempts} ${result.attempts===1?"try":"tries"}`):result.timedOut?"The clock got you this time":"Most players miss this one"}</div>
+            </div>
+
+            {showScore&&(
+              <div className="score-row">
+                <div className="sc"><div className="sc-n" style={{color:result.correct?"#4ADE80":"#FF8A65"}}>+{result.correct?scoreFor(result.attempts,streak,result.speedBonus,result.extended):0}</div><div className="sc-l">Points</div></div>
+                <div className="sc"><div className="sc-n" style={{color:"#80DEEA"}}>{totalScore}</div><div className="sc-l">Total</div></div>
+                <div className="sc"><div className="sc-n" style={{color:"#FF6B35"}}>{streak}</div><div className="sc-l">🔥 Streak</div></div>
               </div>
             )}
-            <div className={`reveal-label ${result.correct?"ok":"no"}`}>{result.correct?"🎉 CORRECT!":result.timedOut?"⏱ TIME'S UP":"😅 THE ANSWER WAS…"}</div>
-            <div className="reveal-answer">{result.acceptedAnswer||cara.answer}</div>
-            {cara.competitors&&<div style={{fontSize:11,color:"#8888AA",marginTop:2,marginBottom:4}}>Also valid: {cara.competitors.filter(c=>norm(c)!==norm(result.acceptedAnswer||cara.answer)).join(" · ")}</div>}
-            <div className="reveal-sub">{result.correct?(result.speedBonus?"⚡ Lightning fast!":`Got it in ${result.attempts} ${result.attempts===1?"try":"tries"}`):result.timedOut?"The clock got you this time":"Most players miss this one"}</div>
-          </div>
 
-          {/* SCORES */}
-          {showScore&&(
-            <div className="score-row">
-              <div className="sc"><div className="sc-n" style={{color:result.correct?"#4ADE80":"#FF8A65"}}>+{result.correct?scoreFor(result.attempts,streak,result.speedBonus):0}</div><div className="sc-l">Points</div></div>
-              <div className="sc"><div className="sc-n" style={{color:"#80DEEA"}}>{totalScore}</div><div className="sc-l">Total</div></div>
-              <div className="sc"><div className="sc-n" style={{color:"#FF6B35"}}>{streak}</div><div className="sc-l">🔥 Streak</div></div>
+            {streak>=3&&(
+              <div className="streak-banner">
+                <span style={{fontSize:22}}>🔥</span>
+                <div><div style={{fontWeight:800,fontSize:13}}>{streak} in a row!</div><div style={{fontSize:11,opacity:.85}}>Don't stop now</div></div>
+              </div>
+            )}
+
+            <CommentsRevealed caraId={cara.id} result={result}/>
+
+            <div className="next-wrap">
+              <button className="next-btn" onClick={()=>onResult(result)}>{nextLabel}</button>
+              {tease&&<div className="next-tease">{tease}</div>}
             </div>
-          )}
-
-          {/* STREAK BANNER */}
-          {streak>=3&&(
-            <div className="streak-banner">
-              <span style={{fontSize:22}}>🔥</span>
-              <div><div style={{fontWeight:800,fontSize:13}}>{streak} in a row!</div><div style={{fontSize:11,opacity:.85}}>Don't stop now</div></div>
-            </div>
-          )}
-
-          {/* SOCIAL MODE — COMMENTS UNLOCKED */}
-          <CommentsRevealed caraId={cara.id} result={result}/>
-
-          {/* NEXT CTA */}
-          <div className="next-wrap">
-            <button className="next-btn" onClick={()=>onResult(result)}>{nextLabel}</button>
-            {tease&&<div className="next-tease">{tease}</div>}
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -890,7 +839,7 @@ export default function App() {
 
   function handleResult(res) {
     const ns  = res.correct ? streak+1 : 0;
-    const pts = res.correct ? scoreFor(res.attempts,ns,res.speedBonus) : 0;
+    const pts = res.correct ? scoreFor(res.attempts,ns,res.speedBonus,res.extended) : 0;
     setStreak(ns); setBest(b=>Math.max(b,ns));
     setTotal(t=>t+pts);
     if (res.correct) setCorrect(c=>c+1);
@@ -903,14 +852,14 @@ export default function App() {
   function handleSkip() {
     setStreak(0);
     mp.track("video_skipped",{cara_id:cara.id});
-    handleResult({correct:false,attempts:0,speedBonus:false,timedOut:false,timeLeft:TIMER_DURATION,lastGuess:""});
+    handleResult({correct:false,attempts:0,speedBonus:false,timedOut:false,timeLeft:TIMER_DURATION,lastGuess:"",extended:false});
   }
 
   function handleReplay() { setIndex(0); setScreen("start"); setAttempts(0); setTotal(0); setStreak(0); setCorrect(0); }
 
-  if (screen==="start")  return <><style>{G}</style><StartScreen onStart={start}/></>;
-  if (screen==="pause")  return <><style>{G}</style><PauseScreen index={index} total={CARAS.length} streak={streak} correct={correct} onNext={()=>setScreen("game")}/></>;
-  if (screen==="end")    return <><style>{G}</style><EndScreen totalScore={total} correct={correct} bestStreak={best} sessionStart={sessionStart} onReplay={handleReplay}/></>;
+  if (screen==="start") return <><style>{G}</style><StartScreen onStart={start}/></>;
+  if (screen==="pause") return <><style>{G}</style><PauseScreen index={index} total={CARAS.length} streak={streak} correct={correct} onNext={()=>setScreen("game")}/></>;
+  if (screen==="end")   return <><style>{G}</style><EndScreen totalScore={total} correct={correct} bestStreak={best} sessionStart={sessionStart} onReplay={handleReplay}/></>;
 
   return (
     <>
