@@ -430,6 +430,19 @@ const G = `
   @keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 `;
 
+// ─── VIDEO PRELOADER ─────────────────────────────────────────
+function VideoPreloader({ currentIndex }) {
+  // Preload next 2 videos silently in background
+  const toPreload = [1,2].map(i=>CARAS[currentIndex+i]).filter(Boolean);
+  return (
+    <div style={{display:"none"}} aria-hidden="true">
+      {toPreload.map(c=>(
+        <video key={c.id} src={c.videoUrl} preload="auto" muted playsInline/>
+      ))}
+    </div>
+  );
+}
+
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
 function VideoBlock({ cara, height="60vh", frozen=false }) {
   const [muted, setMuted] = useState(true);
@@ -449,7 +462,7 @@ function VideoBlock({ cara, height="60vh", frozen=false }) {
   return (
     <div className="vid-wrap" style={{height}}>
       {cara.videoUrl
-        ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center center"}}/>
+        ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline preload="auto" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center center"}}/>
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
       <div className="vid-gradient"/>
@@ -818,6 +831,10 @@ function StartScreen({ onStart }) {
           <button className="start-btn" onClick={onStart} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"START PLAYING →"}</button>
           <div style={{textAlign:"center",fontSize:11,color:"#8888AA",marginTop:10}}>No signup · Free · ~3 min</div>
         </div>
+        {/* Preload first 3 videos */}
+        <div style={{display:"none"}}>
+          {CARAS.slice(0,3).map(c=><video key={c.id} src={c.videoUrl} preload="auto" muted playsInline/>)}
+        </div>
       </div>
     </div>
   );
@@ -950,6 +967,8 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
           {phase==="playing"&&<StatsSidebar cara={cara}/>}
           {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
         </div>
+        {/* Preload next videos silently */}
+        <VideoPreloader currentIndex={index}/>
         {/* +15s BUTTON */}
         {showExtend&&(
           <button className="extend-btn" onClick={handleExtend}>
