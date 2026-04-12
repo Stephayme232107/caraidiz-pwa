@@ -81,11 +81,42 @@ function buildTiles(answer) {
   return tiles;
 }
 
+// ─── BRAND TILE BUILDER ───────────────────────────────────────
+function buildBrandTiles(competitors) {
+  // Collect letters from all competitors, max 2 of each letter
+  const counts = {};
+  competitors.forEach(brand => {
+    brand.toUpperCase().replace(/[^A-Z]/g,"").split("").forEach(l => {
+      counts[l] = Math.min((counts[l]||0)+1, 2);
+    });
+  });
+  let pool = [];
+  Object.entries(counts).forEach(([l,n]) => { for(let i=0;i<n;i++) pool.push(l); });
+  // Add distractors to reach ~16 tiles
+  const used = new Set(pool);
+  const dist = fy("BCDFGHJKLMNPQRSTVWXYZ".split("").filter(c=>!used.has(c)));
+  const need = Math.max(0, 16 - pool.length);
+  pool = [...pool, ...dist.slice(0, need)];
+  // Shuffle — all tiles look identical (no isAnswer distinction)
+  return fy(pool).map((letter,i) => ({id:i, letter, used:false}));
+}
+
+function isBrandCorrect(guess, cara) {
+  if (!cara.competitors) return norm(guess)===norm(cara.answer);
+  return cara.competitors.some(c => norm(guess)===norm(c));
+}
+
+function getAcceptedBrand(guess, cara) {
+  if (!cara.competitors) return cara.answer;
+  return cara.competitors.find(c => norm(guess)===norm(c)) || cara.answer;
+}
+
 // ─── DATA ─────────────────────────────────────────────────────
 const CARAS = [
   { id:1, category:"Song",               answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",          videoUrl:`${CDN}/thriller.mp4.mp4`,   firstGuessRate:61, egoLine:"Only 39% get this on first try" },
   { id:2, category:"Phrase",             answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",               videoUrl:`${CDN}/i-break-up.mp4.mp4`, firstGuessRate:43, egoLine:"You're doing better than 70% 🔥" },
-  { id:3, category:"Brand",              answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,     firstGuessRate:68, egoLine:"Only 32% get this first try" },
+  { id:3, category:"Brand",              answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,     firstGuessRate:68, egoLine:"Only 32% get this first try",
+    competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
   { id:4, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",        videoUrl:`${CDN}/jr-ewing.mp4.mp4`,   firstGuessRate:28, egoLine:"Less than 30% get this 👑" },
   { id:5, category:"Phrase",             answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",          videoUrl:`${CDN}/marry-me.mp4.mp4`,   firstGuessRate:55, egoLine:"Top 20% if you got this 🔥" },
   { id:6, category:"Bonus",              answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,   firstGuessRate:22, egoLine:"TOP 5% — only legends get this 💎" },
@@ -115,7 +146,30 @@ const TEASE_COMMENTS = [
   "this is so obvious omg",
 ];
 
-function getComments(caraId, correct, timedOut, speedBonus, timeLeft) {
+// Brand social feed — simulates other players guessing
+const BRAND_FEEDS = {
+  3: [
+    {avatar:"💅", text:"loreal ✓",       type:"correct"},
+    {avatar:"😂", text:"maybelline??",    type:"wrong"},
+    {avatar:"👀", text:"fenty beauty omg ✓", type:"correct"},
+    {avatar:"😭", text:"i said sephora 💀", type:"wrong"},
+    {avatar:"✨", text:"mac ✓",           type:"correct"},
+    {avatar:"🤷", text:"nyx??",           type:"wrong"},
+  ]
+};
+
+function getComments(caraId, correct, timedOut, speedBonus, timeLeft, acceptedAnswer) {
+  // Brand caras get special social feed
+  if (BRAND_FEEDS[caraId]) {
+    const feed = BRAND_FEEDS[caraId];
+    const base = fy(feed).slice(0,3);
+    if (correct && acceptedAnswer) {
+      base.unshift({avatar:"🧑", text:`${acceptedAnswer.toLowerCase()} ✓`, type:"correct"});
+    } else if (!correct) {
+      base.unshift({avatar:"😬", text:"this one had me 💀", type:"wrong"});
+    }
+    return base.slice(0,4);
+  }
   const f = CARA_FLAVOR[caraId];
   if (timedOut) return [
     {avatar:"⏱", text:"the clock got you 💀", type:"wrong"},
@@ -353,7 +407,7 @@ function CommentsRevealed({ caraId, result }) {
   const [commenting, setCommenting] = useState(false);
   const [comment, setComment] = useState("");
   const inputRef = useRef(null);
-  const comments = getComments(caraId, result.correct, result.timedOut, result.speedBonus, result.timeLeft||0);
+  const comments = getComments(caraId, result.correct, result.timedOut, result.speedBonus, result.timeLeft||0, result.acceptedAnswer);
   const prefill  = result.correct ? "Got it 😎 — " : `I thought it was ___ 😂 — `;
 
   function openComment() {
@@ -379,6 +433,93 @@ function CommentsRevealed({ caraId, result }) {
         : <input ref={inputRef} className="cmt-input-active" value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setCommenting(false)} placeholder="Your reaction…"/>
       }
     </div>
+  );
+}
+
+// ─── BRAND TILE INPUT ─────────────────────────────────────────
+function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
+  const [tiles,    setTiles]    = useState(()=>buildBrandTiles(cara.competitors));
+  const [selected, setSelected] = useState([]);
+  const [flash,    setFlash]    = useState(null); // null | "wrong"
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(()=>{ setTiles(buildBrandTiles(cara.competitors)); setSelected([]); setFlash(null); setShowHint(false); },[cara.id]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
+
+  function tap(tile) {
+    if (tile.used || selected.length>=12) return;
+    SFX.tap();
+    setSelected(p=>[...p,{tileId:tile.id,letter:tile.letter}]);
+    setTiles(p=>p.map(t=>t.id===tile.id?{...t,used:true}:t));
+  }
+
+  function del() {
+    if (!selected.length) return;
+    SFX.del();
+    const rem=selected[selected.length-1];
+    setSelected(p=>p.slice(0,-1));
+    setTiles(p=>p.map(t=>t.id===rem.tileId?{...t,used:false}:t));
+  }
+
+  function shuffle() { setSelected([]); setTiles(buildBrandTiles(cara.competitors)); }
+
+  function submit() {
+    if (selected.length<2) return;
+    const guess=selected.map(s=>s.letter).join("");
+    const ok=isBrandCorrect(guess, cara);
+    const accepted=ok?getAcceptedBrand(guess,cara):null;
+    const speed=ok&&timeLeft>20;
+    const na=attempts+1; setAttempts(na);
+    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft,guess:guess.toLowerCase()});
+    if (ok) {
+      SFX.correct();
+      setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:guess,acceptedAnswer:accepted}),500);
+    } else if (na>=MAX_ATTEMPTS) {
+      SFX.wrong();
+      setFlash("wrong");
+      setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess}),600);
+    } else {
+      SFX.wrong();
+      setFlash("wrong");
+      setTimeout(()=>{ setSelected([]); setTiles(buildBrandTiles(cara.competitors)); setFlash(null); },700);
+    }
+  }
+
+  const guess=selected.map(s=>s.letter).join("");
+
+  return (
+    <>
+      {showHint&&<div style={{margin:"0 16px 4px",padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65",flexShrink:0}}>💡 {cara.hint}</div>}
+
+      {/* GUESS DISPLAY BAR */}
+      <div style={{margin:"6px 16px 4px",padding:"10px 14px",minHeight:46,background:"rgba(255,255,255,0.04)",border:`1.5px solid ${flash==="wrong"?"rgba(255,138,101,0.6)":"rgba(128,222,234,0.2)"}`,borderRadius:14,display:"flex",alignItems:"center",gap:2,flexShrink:0,animation:flash==="wrong"?"shake .3s ease":undefined}}>
+        {guess
+          ? <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:".12em",color:flash==="wrong"?"#FF8A65":"#80DEEA"}}>{guess}</span>
+          : <span style={{fontSize:12,color:"#8888AA"}}>Tap letters to guess a brand…</span>
+        }
+      </div>
+
+      {/* ATTEMPT DOTS */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"2px 16px 4px",flexShrink:0}}>
+        <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>{attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:"Guess any brand you see"}</div>
+        <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.12)"}}/>)}</div>
+      </div>
+
+      {/* TILES — all uniform */}
+      <div className="tiles-wrap">
+        <div className="tiles-grid">
+          {tiles.map(t=>(
+            <div key={t.id} className={`tile${t.used?" used":""}`} onClick={()=>tap(t)}>{t.letter}</div>
+          ))}
+        </div>
+        <div className="tile-actions">
+          <button className="t-btn" onClick={shuffle}>🔀 Shuffle</button>
+          <button className="t-btn del" onClick={del}>⌫ Delete</button>
+          <button className="t-btn" style={{background:selected.length>=2?"rgba(128,222,234,0.15)":"rgba(255,255,255,0.03)",borderColor:selected.length>=2?"rgba(128,222,234,0.5)":"rgba(255,255,255,0.1)",color:selected.length>=2?"#80DEEA":"#8888AA",transition:"all .2s"}} onClick={submit}>✓ Guess</button>
+          <button className="t-btn skip" onClick={onSkip}>Skip</button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -673,7 +814,10 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
       {phase==="playing"&&(
         <>
           <CommentsLocked/>
-          <TileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft} setTimeLeft={setTimeLeft}/>
+          {cara.category==="Brand"
+            ? <BrandTileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
+            : <TileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft} setTimeLeft={setTimeLeft}/>
+          }
         </>
       )}
 
@@ -690,7 +834,8 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
               </div>
             )}
             <div className={`reveal-label ${result.correct?"ok":"no"}`}>{result.correct?"🎉 CORRECT!":result.timedOut?"⏱ TIME'S UP":"😅 THE ANSWER WAS…"}</div>
-            <div className="reveal-answer">{cara.answer}</div>
+            <div className="reveal-answer">{result.acceptedAnswer||cara.answer}</div>
+            {cara.competitors&&<div style={{fontSize:11,color:"#8888AA",marginTop:2,marginBottom:4}}>Also valid: {cara.competitors.filter(c=>norm(c)!==norm(result.acceptedAnswer||cara.answer)).join(" · ")}</div>}
             <div className="reveal-sub">{result.correct?(result.speedBonus?"⚡ Lightning fast!":`Got it in ${result.attempts} ${result.attempts===1?"try":"tries"}`):result.timedOut?"The clock got you this time":"Most players miss this one"}</div>
           </div>
 
