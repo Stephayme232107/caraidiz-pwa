@@ -107,73 +107,73 @@ function getAcceptedBrand(guess, cara) {
 
 // ─── DATA ─────────────────────────────────────────────────────
 const CARAS = [
-  { id:1, category:"Song",              answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",          videoUrl:`${CDN}/thriller.mp4.mp4`,    firstGuessRate:61, stats:{likes:"2.8k",comments:"134"} },
-  { id:2, category:"Song",              answer:"Umbrella",            wordCount:1, difficulty:"easy",   hint:"Rihanna. Rain. ☂️",                     videoUrl:`${CDN}/umbrella.mp4.mp4`,    firstGuessRate:58, stats:{likes:"1.9k",comments:"89"} },
-  { id:3, category:"Brand",             answer:"Gillette",            wordCount:1, difficulty:"easy",   hint:"The best a man can get 🪒",              videoUrl:`${CDN}/gillette.mp4.mp4`,    firstGuessRate:55, stats:{likes:"3.1k",comments:"167"}, competitors:["GILLETTE","SCHICK","BIC","HARRY'S"] },
-  { id:4, category:"Brand",             answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,      firstGuessRate:48, stats:{likes:"2.4k",comments:"112"}, competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
-  { id:5, category:"Phrase",            answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",               videoUrl:`${CDN}/i-break-up.mp4.mp4`,  firstGuessRate:43, stats:{likes:"4.2k",comments:"203"} },
-  { id:6, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",        videoUrl:`${CDN}/jr-ewing.mp4.mp4`,    firstGuessRate:28, stats:{likes:"1.1k",comments:"58"} },
-  { id:7, category:"Phrase",            answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",          videoUrl:`${CDN}/marry-me.mp4.mp4`,    firstGuessRate:35, stats:{likes:"5.6k",comments:"289"} },
-  { id:8, category:"TV Show Character", answer:"Olivia Pope",         wordCount:2, difficulty:"expert", hint:"Scandal. Fixer extraordinaire. 👗",        videoUrl:`${CDN}/olivia-pope.mp4.mp4`, firstGuessRate:18, stats:{likes:"2.0k",comments:"94"} },
-  { id:9, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,    firstGuessRate:22, stats:{likes:"7.3k",comments:"412"} },
+  { id:1, category:"Song",              answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",          videoUrl:`${CDN}/thriller.mp4.mp4`,    firstGuessRate:61, stats:{views:"4.2k",comments:"134"} },
+  { id:2, category:"Song",              answer:"Umbrella",            wordCount:1, difficulty:"easy",   hint:"Rihanna. Rain. ☂️",                     videoUrl:`${CDN}/umbrella.mp4.mp4`,    firstGuessRate:58, stats:{views:"3.1k",comments:"89"} },
+  { id:3, category:"Brand",             answer:"Gillette",            wordCount:1, difficulty:"easy",   hint:"The best a man can get 🪒",              videoUrl:`${CDN}/gillette.mp4.mp4`,    firstGuessRate:55, stats:{views:"5.8k",comments:"167"}, competitors:["GILLETTE","SCHICK","BIC","HARRY'S"] },
+  { id:4, category:"Brand",             answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,      firstGuessRate:48, stats:{views:"6.2k",comments:"212"}, competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
+  { id:5, category:"Phrase",            answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",               videoUrl:`${CDN}/i-break-up.mp4.mp4`,  firstGuessRate:43, stats:{views:"7.4k",comments:"203"} },
+  { id:6, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",        videoUrl:`${CDN}/jr-ewing.mp4.mp4`,    firstGuessRate:28, stats:{views:"2.9k",comments:"58"} },
+  { id:7, category:"Phrase",            answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",          videoUrl:`${CDN}/marry-me.mp4.mp4`,    firstGuessRate:35, stats:{views:"9.1k",comments:"289"} },
+  { id:8, category:"TV Show Character", answer:"Olivia Pope",         wordCount:2, difficulty:"expert", hint:"Scandal. Fixer extraordinaire. 👗",        videoUrl:`${CDN}/olivia-pope.mp4.mp4`, firstGuessRate:18, stats:{views:"3.4k",comments:"94"} },
+  { id:9, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,    firstGuessRate:22, stats:{views:"11.2k",comments:"412"} },
 ];
 
 // ─── TIKTOK COMMENTS ──────────────────────────────────────────
 const TIKTOK_COMMENTS = {
   1:[
-    {user:"moonchild99",  text:"THRILLER 🕺 instantly", correct:true},
-    {user:"beats4life",   text:"i said beat it 😭",      correct:false},
-    {user:"jxsmine__",    text:"too easy lmaooo 🔥",     correct:true},
-    {user:"d4ncing.star", text:"the zombie walk 💀",      correct:null},
+    {user:"player_4821",  text:"THRILLER 🕺 instantly",    correct:true},
+    {user:"guesser_77",   text:"i said beat it 😭",         correct:false},
+    {user:"player_1203",  text:"too easy lmaooo 🔥",        correct:true},
+    {user:"guesser_x9",   text:"the zombie walk 💀",         correct:null},
   ],
   2:[
-    {user:"riri.fan4ever", text:"UMBRELLA ☂️ first try", correct:true},
-    {user:"musichead22",   text:"rain on me?? 😭",        correct:false},
-    {user:"pop.culture.x", text:"rihanna era unlocked 🔥",correct:true},
-    {user:"guessqueen",    text:"this is too obvious omg", correct:null},
+    {user:"player_3341",  text:"UMBRELLA ☂️ first try",     correct:true},
+    {user:"guesser_55",   text:"rain on me?? 😭",            correct:false},
+    {user:"player_8872",  text:"rihanna era unlocked 🔥",    correct:true},
+    {user:"guesser_404",  text:"this is too obvious omg",    correct:null},
   ],
   3:[
-    {user:"Yoro.thai",    text:"Maybe Wilkinson?",        correct:false},
-    {user:"Suza3",        text:"Gillette ✓",              correct:true},
-    {user:"razor.guy",    text:"schick?? idk",            correct:false},
-    {user:"gym.bro.x",    text:"harry's for sure",        correct:false},
-    {user:"blademaster",  text:"gillette the best 🪒",    correct:true},
+    {user:"player_2847",  text:"Maybe Wilkinson?",           correct:false},
+    {user:"guesser_19",   text:"Gillette ✓",                 correct:true},
+    {user:"player_6630",  text:"schick?? idk",               correct:false},
+    {user:"guesser_88",   text:"harry's for sure",           correct:false},
+    {user:"player_0012",  text:"gillette the best 🪒",       correct:true},
   ],
   4:[
-    {user:"beautyqueen",  text:"loreal duh ✓",           correct:true},
-    {user:"makeupjunkie", text:"maybelline??",            correct:false},
-    {user:"fentygang",    text:"fenty beauty omg ✓",     correct:true},
-    {user:"glam.era",     text:"i said sephora 💀",       correct:false},
+    {user:"player_5591",  text:"loreal duh ✓",              correct:true},
+    {user:"guesser_302",  text:"maybelline??",               correct:false},
+    {user:"player_7743",  text:"fenty beauty omg ✓",        correct:true},
+    {user:"guesser_61",   text:"i said sephora 💀",          correct:false},
   ],
   5:[
-    {user:"dramaqueen__", text:"I BREAK UP WITH YOU 💔",  correct:true},
-    {user:"overthinking", text:"we need to talk??",       correct:false},
-    {user:"relationshipx", text:"felt that one 😭",       correct:null},
-    {user:"xoxo.vibes",   text:"got it first try 🔥",     correct:true},
+    {user:"player_9981",  text:"I BREAK UP WITH YOU 💔",    correct:true},
+    {user:"guesser_24",   text:"we need to talk??",          correct:false},
+    {user:"player_4417",  text:"felt that one 😭",           correct:null},
+    {user:"guesser_773",  text:"got it first try 🔥",        correct:true},
   ],
   6:[
-    {user:"dallasera",    text:"JR EWING 🤠 iconic",      correct:true},
-    {user:"tvbuff99",     text:"no idea who this is ngl",  correct:false},
-    {user:"soapfan2000",  text:"DALLAS ERA omg yes",       correct:true},
-    {user:"classic.tv",   text:"legend of television 👑",  correct:null},
+    {user:"player_1156",  text:"JR EWING 🤠 iconic",        correct:true},
+    {user:"guesser_99",   text:"no idea who this is ngl",    correct:false},
+    {user:"player_3308",  text:"DALLAS ERA omg yes",         correct:true},
+    {user:"guesser_x7",   text:"legend of television 👑",    correct:null},
   ],
   7:[
-    {user:"romantic.x",   text:"WOULD YOU MARRY ME 💍",   correct:true},
-    {user:"proposal.era", text:"crying rn fr 😭",          correct:null},
-    {user:"loveisblind",  text:"is it a proposal phrase?", correct:false},
-    {user:"yesidoo",      text:"got it instantly 🔥",      correct:true},
+    {user:"player_6624",  text:"WOULD YOU MARRY ME 💍",     correct:true},
+    {user:"guesser_180",  text:"crying rn fr 😭",            correct:null},
+    {user:"player_2291",  text:"is it a proposal phrase?",   correct:false},
+    {user:"guesser_55",   text:"got it instantly 🔥",        correct:true},
   ],
   8:[
-    {user:"scandalfan",   text:"OLIVIA POPE 👗🔥",         correct:true},
-    {user:"greysfan",     text:"grey's anatomy??",         correct:false},
-    {user:"suitsfan",     text:"i said suits person",      correct:false},
-    {user:"gladiator_",   text:"it's handled 💎",          correct:null},
+    {user:"player_8803",  text:"OLIVIA POPE 👗🔥",          correct:true},
+    {user:"guesser_412",  text:"grey's anatomy??",           correct:false},
+    {user:"player_0071",  text:"i said suits person",        correct:false},
+    {user:"guesser_x2",   text:"it's handled 💎",            correct:null},
   ],
   9:[
-    {user:"coldplayfan",  text:"COLDPLAY KISS CAM 🎸",     correct:true},
-    {user:"stadiumlove",  text:"concert something??",      correct:false},
-    {user:"musicera22",   text:"TOP 5% 💎 legend",         correct:null},
-    {user:"yellowvibes",  text:"iconic moment omg",        correct:true},
+    {user:"player_5549",  text:"COLDPLAY KISS CAM 🎸",      correct:true},
+    {user:"guesser_331",  text:"concert something??",        correct:false},
+    {user:"player_7720",  text:"TOP 5% 💎 legend",           correct:null},
+    {user:"guesser_88",   text:"iconic moment omg",          correct:true},
   ],
 };
 
@@ -495,19 +495,15 @@ function TikTokReveal({ cara, result }) {
 
   return (
     <div className="tiktok-overlay">
-      {/* SIDEBAR */}
+      {/* SIDEBAR — views + comments only */}
       <div className="tiktok-sidebar">
         <div className="tiktok-stat">
-          <span className="tiktok-stat-icon">❤️</span>
-          <span className="tiktok-stat-num">{stats.likes}</span>
+          <span className="tiktok-stat-icon">👁</span>
+          <span className="tiktok-stat-num">{stats.views||"1.2k"}</span>
         </div>
         <div className="tiktok-stat">
           <span className="tiktok-stat-icon">💬</span>
           <span className="tiktok-stat-num">{stats.comments}</span>
-        </div>
-        <div className="tiktok-stat">
-          <span className="tiktok-stat-icon">↗️</span>
-          <span className="tiktok-stat-num">Share</span>
         </div>
       </div>
 
@@ -678,12 +674,12 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
   const answerClean = answer.replace(/[^A-Z ]/g,"");
   const words       = answerClean.split(" ");
   const totalL      = answerClean.replace(/ /g,"").length;
-  const [tiles,    setTiles]    = useState(()=>buildTiles(cara.answer));
+  const [tiles,    setTiles]    = useState(()=>cara.competitors?buildBrandTiles(cara.competitors):buildTiles(cara.answer));
   const [selected, setSelected] = useState([]);
   const [slotState,setSlotState]= useState(null);
   const [showHint, setShowHint] = useState(false);
 
-  useEffect(()=>{ setTiles(buildTiles(cara.answer)); setSelected([]); setSlotState(null); setShowHint(false); },[cara.id]);
+  useEffect(()=>{ setTiles(cara.competitors?buildBrandTiles(cara.competitors):buildTiles(cara.answer)); setSelected([]); setSlotState(null); setShowHint(false); },[cara.id]);
   useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
 
   function tap(tile) {
@@ -707,23 +703,24 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
     setTiles(p=>p.map(t=>t.id===rem.tileId?{...t,used:false}:t));
     setSlotState(null);
   }
-  function shuffle() { setSelected([]); setTiles(buildTiles(cara.answer)); setSlotState(null); }
+  function shuffle() { setSelected([]); setTiles(cara.competitors?buildBrandTiles(cara.competitors):buildTiles(cara.answer)); setSlotState(null); }
   function check(sel) {
     const guess=sel.map(s=>s.letter).join("").toLowerCase();
-    const ok=norm(guess)===norm(cara.answer);
+    const ok=cara.competitors ? isBrandCorrect(guess,cara) : norm(guess)===norm(cara.answer);
+    const accepted=ok?(cara.competitors?getAcceptedBrand(guess,cara):cara.answer):null;
     const speed=ok&&timeLeft>20;
     const na=attempts+1; setAttempts(na);
     setSlotState(ok?"correct":"wrong");
     mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
     if (ok) {
       SFX.correct();
-      setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:sel.map(s=>s.letter).join("")}),500);
+      setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:sel.map(s=>s.letter).join(""),acceptedAnswer:accepted}),500);
     } else if (na>=MAX_ATTEMPTS) {
       SFX.wrong();
       setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:sel.map(s=>s.letter).join("")}),600);
     } else {
       SFX.wrong();
-      setTimeout(()=>{ setSelected([]); setTiles(buildTiles(cara.answer)); setSlotState(null); },700);
+      setTimeout(()=>{ setSelected([]); setTiles(cara.competitors?buildBrandTiles(cara.competitors):buildTiles(cara.answer)); setSlotState(null); },700);
     }
   }
   let si=0;
@@ -942,12 +939,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
 
         {/* PLAYING */}
         {phase==="playing"&&(
-          <>
-            {cara.category==="Brand"
-              ? <BrandTileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
-              : <TileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
-            }
-          </>
+          <TileInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
         )}
 
         {/* REVEALED */}
