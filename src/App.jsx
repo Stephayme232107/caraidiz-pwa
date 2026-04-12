@@ -667,7 +667,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
             )}
             <div className={`reveal-label ${result.correct?"ok":"no"}`}>{result.correct?"🎉 CORRECT!":result.timedOut?"⏱ TIME'S UP":"😅 THE ANSWER WAS…"}</div>
             <div className="reveal-answer">{cara.answer}</div>
-            <div className="reveal-sub">{result.correct?(result.speedBonus?"⚡ Lightning fast!"`Got it in ${result.attempts} ${result.attempts===1?"try":"tries"}`):result.timedOut?"The clock got you this time":"Most players miss this one"}</div>
+            <div className="reveal-sub">{result.correct?(result.speedBonus?"⚡ Lightning fast!":`Got it in ${result.attempts} ${result.attempts===1?"try":"tries"}`):result.timedOut?"The clock got you this time":"Most players miss this one"}</div>
           </div>
 
           {/* SCORES */}
