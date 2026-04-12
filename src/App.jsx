@@ -449,7 +449,7 @@ function VideoBlock({ cara, height="60vh", frozen=false }) {
   return (
     <div className="vid-wrap" style={{height}}>
       {cara.videoUrl
-        ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"top center"}}/>
+        ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center center"}}/>
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
       <div className="vid-gradient"/>
@@ -528,6 +528,33 @@ function TikTokReveal({ cara, result }) {
           <div className="tiktok-answer">{result.acceptedAnswer||cara.answer}</div>
           {cara.competitors&&<div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:2}}>Also valid: {cara.competitors.filter(c=>norm(c)!==norm(result.acceptedAnswer||cara.answer)).join(" · ")}</div>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── BLURRED COMMENTS SCROLL (during gameplay) ───────────────
+const BLUR_ROWS = [
+  {w:"62%"},{w:"44%"},{w:"71%"},{w:"38%"},{w:"55%"},
+  {w:"48%"},{w:"66%"},{w:"41%"},{w:"58%"},{w:"35%"},
+];
+function BlurredCommentsScroll() {
+  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    const t = setInterval(()=>setOffset(o=>o+1), 1800);
+    return ()=>clearInterval(t);
+  }, []);
+  const visible = [0,1,2].map(i=>BLUR_ROWS[(offset+i)%BLUR_ROWS.length]);
+  return (
+    <div style={{position:"absolute",bottom:48,left:0,right:0,zIndex:6,padding:"8px 14px 4px",background:"linear-gradient(to top,rgba(0,0,0,0.72) 0%,transparent 100%)"}}>
+      {visible.map((r,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,opacity:i===0?0.35:i===1?0.55:0.7,transition:"opacity .4s"}}>
+          <div style={{width:20,height:20,borderRadius:"50%",background:"rgba(255,255,255,0.18)",flexShrink:0}}/>
+          <div style={{height:9,borderRadius:5,background:"rgba(255,255,255,0.18)",filter:"blur(5px)",width:r.w}}/>
+        </div>
+      ))}
+      <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(128,222,234,0.85)",fontWeight:700,letterSpacing:".03em",marginTop:2}}>
+        <span>🔒</span><span>Guess to reveal what others said</span>
       </div>
     </div>
   );
@@ -627,7 +654,7 @@ function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLef
         }
       </div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"2px 16px 4px",flexShrink:0}}>
-        <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>{attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:"Guess any brand you see"}</div>
+        <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>{attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:"Tap letters to guess…"}</div>
         <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.12)"}}/>)}</div>
       </div>
       <div className="tiles-wrap">
@@ -898,6 +925,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         <div style={{position:"relative"}}>
           <VideoBlock cara={cara} height="60vh"/>
           {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
+          {phase==="playing"&&<BlurredCommentsScroll/>}
           {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
         </div>
         {/* +15s BUTTON */}
