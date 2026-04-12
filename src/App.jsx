@@ -6,10 +6,10 @@
 import { useState, useEffect, useRef } from "react";
 
 // ─── MIXPANEL ─────────────────────────────────────────────────
-const MIXPANEL_TOKEN = "YOUR_TOKEN_HERE";
+const MIXPANEL_TOKEN = "2b1e84ea597387914b63c3662f751e5b";
 const mp = {
   init() {
-    if (MIXPANEL_TOKEN === "YOUR_TOKEN_HERE") return;
+    if (!MIXPANEL_TOKEN || MIXPANEL_TOKEN === "YOUR_TOKEN_HERE") return;
     const s = document.createElement("script");
     s.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
     s.onload = () => window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: true });
