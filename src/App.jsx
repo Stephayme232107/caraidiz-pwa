@@ -346,7 +346,7 @@ const G = `
 `;
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, height="40vh", frozen=false }) {
+function VideoBlock({ cara, height="34vh", frozen=false }) {
   const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
@@ -759,7 +759,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         </div>
         {/* VIDEO + TIMER OVERLAY */}
         <div style={{position:"relative"}}>
-          <VideoBlock cara={cara} height="40vh" frozen={phase==="revealed"}/>
+          <VideoBlock cara={cara} height="34vh" frozen={phase==="revealed"}/>
           {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
         </div>
         {/* +15s BUTTON */}
