@@ -21,6 +21,12 @@ const mp = {
   }
 };
 
+// ─── HELPERS ──────────────────────────────────────────────────
+const CDN      = "https://pub-cb42555aad7844b7ac02e5cf231188e1.r2.dev";
+const norm     = s => s.trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+const saveJSON = (k,v) => localStorage.setItem(k,JSON.stringify(v));
+const loadJSON = (k,fb) => { try { return JSON.parse(localStorage.getItem(k))??fb; } catch { return fb; } };
+
 // ─── AUDIO + HAPTICS ──────────────────────────────────────────
 const SFX = {
   _ctx: null, _on: false,
@@ -48,12 +54,6 @@ const SFX = {
   timeUp()  { this._tone(180, "sawtooth", 0.3,  0.08); this._vibe(100); },
   del()     { this._tone(300, "sine",     0.07, 0.05); },
 };
-
-// ─── HELPERS ──────────────────────────────────────────────────
-const CDN      = "https://pub-cb42555aad7844b7ac02e5cf231188e1.r2.dev";
-const norm     = s => s.trim().toLowerCase().replace(/[^a-z0-9]/g,"");
-const saveJSON = (k,v) => localStorage.setItem(k,JSON.stringify(v));
-const loadJSON = (k,fb) => { try { return JSON.parse(localStorage.getItem(k))??fb; } catch { return fb; } };
 
 // ─── SHUFFLE ──────────────────────────────────────────────────
 const DISTRACT = "BCDFGHJKLMNPQRSTVWXYZ";
