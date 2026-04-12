@@ -107,16 +107,75 @@ function getAcceptedBrand(guess, cara) {
 
 // ─── DATA ─────────────────────────────────────────────────────
 const CARAS = [
-  { id:1, category:"Song",              answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",          videoUrl:`${CDN}/thriller.mp4.mp4`,    firstGuessRate:61 },
-  { id:2, category:"Song",              answer:"Umbrella",            wordCount:1, difficulty:"easy",   hint:"Rihanna. Rain. ☂️",                     videoUrl:`${CDN}/umbrella.mp4.mp4`,    firstGuessRate:58 },
-  { id:3, category:"Brand",             answer:"Gillette",            wordCount:1, difficulty:"easy",   hint:"The best a man can get 🪒",              videoUrl:`${CDN}/gillette.mp4.mp4`,    firstGuessRate:55, competitors:["GILLETTE","SCHICK","BIC","HARRY'S"] },
-  { id:4, category:"Brand",             answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,      firstGuessRate:48, competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
-  { id:5, category:"Phrase",            answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",               videoUrl:`${CDN}/i-break-up.mp4.mp4`,  firstGuessRate:43 },
-  { id:6, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",        videoUrl:`${CDN}/jr-ewing.mp4.mp4`,    firstGuessRate:28 },
-  { id:7, category:"Phrase",            answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",          videoUrl:`${CDN}/marry-me.mp4.mp4`,    firstGuessRate:35 },
-  { id:8, category:"TV Show Character", answer:"Olivia Pope",         wordCount:2, difficulty:"expert", hint:"Scandal. Fixer extraordinaire. 👗",        videoUrl:`${CDN}/olivia-pope.mp4.mp4`, firstGuessRate:18 },
-  { id:9, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,    firstGuessRate:22 },
+  { id:1, category:"Song",              answer:"Thriller",            wordCount:1, difficulty:"easy",   hint:"Michael Jackson. Zombies. 🕺",          videoUrl:`${CDN}/thriller.mp4.mp4`,    firstGuessRate:61, stats:{likes:"2.8k",comments:"134"} },
+  { id:2, category:"Song",              answer:"Umbrella",            wordCount:1, difficulty:"easy",   hint:"Rihanna. Rain. ☂️",                     videoUrl:`${CDN}/umbrella.mp4.mp4`,    firstGuessRate:58, stats:{likes:"1.9k",comments:"89"} },
+  { id:3, category:"Brand",             answer:"Gillette",            wordCount:1, difficulty:"easy",   hint:"The best a man can get 🪒",              videoUrl:`${CDN}/gillette.mp4.mp4`,    firstGuessRate:55, stats:{likes:"3.1k",comments:"167"}, competitors:["GILLETTE","SCHICK","BIC","HARRY'S"] },
+  { id:4, category:"Brand",             answer:"Revlon",              wordCount:1, difficulty:"medium", hint:"Iconic American beauty brand 💄",         videoUrl:`${CDN}/revlon.mp4.mp4`,      firstGuessRate:48, stats:{likes:"2.4k",comments:"112"}, competitors:["REVLON","LOREAL","MAYBELLINE","FENTY","MAC"] },
+  { id:5, category:"Phrase",            answer:"I break up with you", wordCount:5, difficulty:"medium", hint:"End of a relationship 💔",               videoUrl:`${CDN}/i-break-up.mp4.mp4`,  firstGuessRate:43, stats:{likes:"4.2k",comments:"203"} },
+  { id:6, category:"TV Show Character", answer:"JR Ewing",            wordCount:2, difficulty:"hard",   hint:"Dallas. The ultimate villain. 🤠",        videoUrl:`${CDN}/jr-ewing.mp4.mp4`,    firstGuessRate:28, stats:{likes:"1.1k",comments:"58"} },
+  { id:7, category:"Phrase",            answer:"Would you marry me",  wordCount:4, difficulty:"hard",   hint:"The most important question 💍",          videoUrl:`${CDN}/marry-me.mp4.mp4`,    firstGuessRate:35, stats:{likes:"5.6k",comments:"289"} },
+  { id:8, category:"TV Show Character", answer:"Olivia Pope",         wordCount:2, difficulty:"expert", hint:"Scandal. Fixer extraordinaire. 👗",        videoUrl:`${CDN}/olivia-pope.mp4.mp4`, firstGuessRate:18, stats:{likes:"2.0k",comments:"94"} },
+  { id:9, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,    firstGuessRate:22, stats:{likes:"7.3k",comments:"412"} },
 ];
+
+// ─── TIKTOK COMMENTS ──────────────────────────────────────────
+const TIKTOK_COMMENTS = {
+  1:[
+    {user:"moonchild99",  text:"THRILLER 🕺 instantly", correct:true},
+    {user:"beats4life",   text:"i said beat it 😭",      correct:false},
+    {user:"jxsmine__",    text:"too easy lmaooo 🔥",     correct:true},
+    {user:"d4ncing.star", text:"the zombie walk 💀",      correct:null},
+  ],
+  2:[
+    {user:"riri.fan4ever", text:"UMBRELLA ☂️ first try", correct:true},
+    {user:"musichead22",   text:"rain on me?? 😭",        correct:false},
+    {user:"pop.culture.x", text:"rihanna era unlocked 🔥",correct:true},
+    {user:"guessqueen",    text:"this is too obvious omg", correct:null},
+  ],
+  3:[
+    {user:"Yoro.thai",    text:"Maybe Wilkinson?",        correct:false},
+    {user:"Suza3",        text:"Gillette ✓",              correct:true},
+    {user:"razor.guy",    text:"schick?? idk",            correct:false},
+    {user:"gym.bro.x",    text:"harry's for sure",        correct:false},
+    {user:"blademaster",  text:"gillette the best 🪒",    correct:true},
+  ],
+  4:[
+    {user:"beautyqueen",  text:"loreal duh ✓",           correct:true},
+    {user:"makeupjunkie", text:"maybelline??",            correct:false},
+    {user:"fentygang",    text:"fenty beauty omg ✓",     correct:true},
+    {user:"glam.era",     text:"i said sephora 💀",       correct:false},
+  ],
+  5:[
+    {user:"dramaqueen__", text:"I BREAK UP WITH YOU 💔",  correct:true},
+    {user:"overthinking", text:"we need to talk??",       correct:false},
+    {user:"relationshipx", text:"felt that one 😭",       correct:null},
+    {user:"xoxo.vibes",   text:"got it first try 🔥",     correct:true},
+  ],
+  6:[
+    {user:"dallasera",    text:"JR EWING 🤠 iconic",      correct:true},
+    {user:"tvbuff99",     text:"no idea who this is ngl",  correct:false},
+    {user:"soapfan2000",  text:"DALLAS ERA omg yes",       correct:true},
+    {user:"classic.tv",   text:"legend of television 👑",  correct:null},
+  ],
+  7:[
+    {user:"romantic.x",   text:"WOULD YOU MARRY ME 💍",   correct:true},
+    {user:"proposal.era", text:"crying rn fr 😭",          correct:null},
+    {user:"loveisblind",  text:"is it a proposal phrase?", correct:false},
+    {user:"yesidoo",      text:"got it instantly 🔥",      correct:true},
+  ],
+  8:[
+    {user:"scandalfan",   text:"OLIVIA POPE 👗🔥",         correct:true},
+    {user:"greysfan",     text:"grey's anatomy??",         correct:false},
+    {user:"suitsfan",     text:"i said suits person",      correct:false},
+    {user:"gladiator_",   text:"it's handled 💎",          correct:null},
+  ],
+  9:[
+    {user:"coldplayfan",  text:"COLDPLAY KISS CAM 🎸",     correct:true},
+    {user:"stadiumlove",  text:"concert something??",      correct:false},
+    {user:"musicera22",   text:"TOP 5% 💎 legend",         correct:null},
+    {user:"yellowvibes",  text:"iconic moment omg",        correct:true},
+  ],
+};
 
 const MAX_ATTEMPTS   = 3;
 const TIMER_DURATION = 30;
@@ -343,6 +402,25 @@ const G = `
   .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18);filter:blur(4px)}
   .cmt-ov-lock{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(128,222,234,0.9);font-weight:700;letter-spacing:.04em;margin-top:2px}
 
+  /* ── TIKTOK REVEAL OVERLAY ── */
+  .tiktok-overlay{position:absolute;inset:0;z-index:7;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end}
+  .tiktok-result{padding:8px 14px 4px;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 100%)}
+  .tiktok-answer{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.08em;color:#fff;text-shadow:0 0 20px rgba(255,255,255,0.3);margin-bottom:2px}
+  .tiktok-label{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+  .tiktok-label.ok{color:#4ADE80}
+  .tiktok-label.no{color:#FF8A65}
+  .tiktok-cmts{padding:0 14px 10px;display:flex;flex-direction:column;gap:4px}
+  .tiktok-cmt{display:flex;align-items:center;gap:6px;animation:slideUp .3s ease-out both}
+  .tiktok-cmt-user{font-size:11px;font-weight:800;color:rgba(255,255,255,0.7)}
+  .tiktok-cmt-text{font-size:12px;font-weight:500}
+  .tiktok-cmt-text.correct{color:#4ADE80}
+  .tiktok-cmt-text.wrong{color:rgba(255,255,255,0.65)}
+  .tiktok-cmt-text.neutral{color:#fff}
+  .tiktok-sidebar{position:absolute;right:10px;bottom:80px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .tiktok-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .tiktok-stat-icon{font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))}
+  .tiktok-stat-num{font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8)}
+
   /* ── ANIMATIONS ── */
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -353,7 +431,7 @@ const G = `
 `;
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, height="52vh", frozen=false, showComments=false }) {
+function VideoBlock({ cara, height="60vh", frozen=false }) {
   const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
@@ -371,7 +449,7 @@ function VideoBlock({ cara, height="52vh", frozen=false, showComments=false }) {
   return (
     <div className="vid-wrap" style={{height}}>
       {cara.videoUrl
-        ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline style={{height:"100%"}}/>
+        ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"top center"}}/>
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
       <div className="vid-gradient"/>
@@ -381,13 +459,6 @@ function VideoBlock({ cara, height="52vh", frozen=false, showComments=false }) {
       </div>
       <div className="hint-badge">Only {cara.firstGuessRate}% get this 👀</div>
       <button className="mute-btn" onClick={toggle}>{muted?"🔇":"🔊"}</button>
-      {showComments&&(
-        <div className="comments-overlay">
-          <div className="cmt-ov-row"><div className="cmt-ov-avatar"/><div className="cmt-ov-line" style={{width:"55%"}}/></div>
-          <div className="cmt-ov-row"><div className="cmt-ov-avatar"/><div className="cmt-ov-line" style={{width:"38%"}}/></div>
-          <div className="cmt-ov-lock"><span>🔒</span><span>Guess to reveal what others said</span></div>
-        </div>
-      )}
     </div>
   );
 }
@@ -407,6 +478,58 @@ function TimerOverlay({ timeLeft, maxTime }) {
         <div className="timer-fill-bar" style={{width:`${pct}%`,background:tCol}}/>
       </div>
     </>
+  );
+}
+
+// ─── TIKTOK REVEAL OVERLAY ───────────────────────────────────
+function TikTokReveal({ cara, result }) {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const cmts = TIKTOK_COMMENTS[cara.id] || [];
+  const stats = cara.stats || {likes:"1.2k", comments:"47"};
+
+  useEffect(() => {
+    setVisibleCount(0);
+    const t = setInterval(() => setVisibleCount(v => v < cmts.length ? v+1 : v), 700);
+    return () => clearInterval(t);
+  }, [cara.id]);
+
+  return (
+    <div className="tiktok-overlay">
+      {/* SIDEBAR */}
+      <div className="tiktok-sidebar">
+        <div className="tiktok-stat">
+          <span className="tiktok-stat-icon">❤️</span>
+          <span className="tiktok-stat-num">{stats.likes}</span>
+        </div>
+        <div className="tiktok-stat">
+          <span className="tiktok-stat-icon">💬</span>
+          <span className="tiktok-stat-num">{stats.comments}</span>
+        </div>
+        <div className="tiktok-stat">
+          <span className="tiktok-stat-icon">↗️</span>
+          <span className="tiktok-stat-num">Share</span>
+        </div>
+      </div>
+
+      {/* COMMENTS + RESULT */}
+      <div>
+        <div className="tiktok-cmts">
+          {cmts.slice(0, visibleCount).map((c,i)=>(
+            <div key={i} className="tiktok-cmt" style={{animationDelay:`${i*0.1}s`}}>
+              <span className="tiktok-cmt-user">@{c.user}</span>
+              <span className={`tiktok-cmt-text ${c.correct===true?"correct":c.correct===false?"wrong":"neutral"}`}>{c.text}</span>
+            </div>
+          ))}
+        </div>
+        <div className="tiktok-result">
+          <div className={`tiktok-label ${result.correct?"ok":"no"}`}>
+            {result.correct?"🎉 CORRECT!":result.timedOut?"⏱ TIME'S UP":"😅 THE ANSWER WAS…"}
+          </div>
+          <div className="tiktok-answer">{result.acceptedAnswer||cara.answer}</div>
+          {cara.competitors&&<div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:2}}>Also valid: {cara.competitors.filter(c=>norm(c)!==norm(result.acceptedAnswer||cara.answer)).join(" · ")}</div>}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -771,10 +894,11 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
           <div className="prog-track"><div className="prog-fill" style={{width:`${index/total*100}%`}}/></div>
           <div className="pips">{CARAS.map((_,i)=><div key={i} className="pip" style={{background:i<index?"#80DEEA":i===index?"rgba(128,222,234,0.4)":"rgba(255,255,255,0.08)"}}/>)}</div>
         </div>
-        {/* VIDEO + TIMER OVERLAY + COMMENTS OVERLAY */}
+        {/* VIDEO + TIMER OVERLAY */}
         <div style={{position:"relative"}}>
-          <VideoBlock cara={cara} height="52vh" frozen={phase==="revealed"} showComments={phase==="playing"}/>
+          <VideoBlock cara={cara} height="60vh"/>
           {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
+          {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
         </div>
         {/* +15s BUTTON */}
         {showExtend&&(
@@ -801,21 +925,6 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         {/* REVEALED */}
         {phase==="revealed"&&result&&(
           <>
-            <div className="reveal-bar">
-              {result.lastGuess&&(
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"6px 12px",background:result.correct?"rgba(74,222,128,0.08)":"rgba(255,138,101,0.08)",border:`1px solid ${result.correct?"rgba(74,222,128,0.25)":"rgba(255,138,101,0.25)"}`,borderRadius:10}}>
-                  <span style={{fontSize:10,fontWeight:800,color:result.correct?"#4ADE80":"#FF8A65",letterSpacing:".1em",textTransform:"uppercase",flexShrink:0}}>YOU:</span>
-                  <span style={{fontSize:13,fontWeight:700,color:result.correct?"#4ADE80":"#FF8A65"}}>{result.lastGuess}</span>
-                  <span style={{marginLeft:"auto"}}>{result.correct?"✅":"❌"}</span>
-                </div>
-              )}
-              <div className={`reveal-label ${result.correct?"ok":"no"}`}>{result.correct?"🎉 CORRECT!":result.timedOut?"⏱ TIME'S UP":"😅 THE ANSWER WAS…"}</div>
-              <div className="reveal-answer">{result.acceptedAnswer||cara.answer}</div>
-              {cara.competitors&&<div style={{fontSize:11,color:"#8888AA",marginTop:2,marginBottom:4}}>Also valid: {cara.competitors.filter(c=>norm(c)!==norm(result.acceptedAnswer||cara.answer)).join(" · ")}</div>}
-              {result.extended&&<div style={{fontSize:11,color:"#FACC15",marginBottom:4}}>⏱ Used +15s extension (-{EXTEND_PENALTY} pts)</div>}
-              <div className="reveal-sub">{result.correct?(result.speedBonus?"⚡ Lightning fast!":`Got it in ${result.attempts} ${result.attempts===1?"try":"tries"}`):result.timedOut?"The clock got you this time":"Most players miss this one"}</div>
-            </div>
-
             {showScore&&(
               <div className="score-row">
                 <div className="sc"><div className="sc-n" style={{color:result.correct?"#4ADE80":"#FF8A65"}}>+{result.correct?scoreFor(result.attempts,streak,result.speedBonus,result.extended):0}</div><div className="sc-l">Points</div></div>
@@ -831,9 +940,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
               </div>
             )}
 
-            <CommentsRevealed caraId={cara.id} result={result}/>
-
-            <div className="next-wrap">
+            <div className="next-wrap" style={{marginTop:8}}>
               <button className="next-btn" onClick={()=>onResult(result)}>{nextLabel}</button>
               {tease&&<div className="next-tease">{tease}</div>}
             </div>
