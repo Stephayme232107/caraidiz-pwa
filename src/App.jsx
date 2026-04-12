@@ -498,16 +498,12 @@ function TikTokReveal({ cara, result }) {
       {/* SIDEBAR — views + comments only */}
       <div className="tiktok-sidebar">
         <div className="tiktok-stat">
-          <span className="tiktok-stat-icon" style={{fontSize:20}}>▶</span>
+          <span className="tiktok-stat-icon">👁</span>
           <span className="tiktok-stat-num">{stats.views||"1.2k"}</span>
         </div>
         <div className="tiktok-stat">
-          <span style={{fontSize:13,fontWeight:800,color:"#4ADE80",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>✓</span>
-          <span className="tiktok-stat-num" style={{color:"#4ADE80"}}>{(cara.firstGuessRate)+"%"}</span>
-        </div>
-        <div className="tiktok-stat">
-          <span style={{fontSize:13,fontWeight:800,color:"#FF8A65",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>✗</span>
-          <span className="tiktok-stat-num" style={{color:"#FF8A65"}}>{(100-cara.firstGuessRate)+"%"}</span>
+          <span className="tiktok-stat-icon">💬</span>
+          <span className="tiktok-stat-num">{stats.comments}</span>
         </div>
       </div>
 
@@ -526,8 +522,28 @@ function TikTokReveal({ cara, result }) {
             {result.correct?"🎉 CORRECT!":result.timedOut?"⏱ TIME'S UP":"😅 THE ANSWER WAS…"}
           </div>
           <div className="tiktok-answer">{result.acceptedAnswer||cara.answer}</div>
-          {cara.competitors&&<div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:2}}>Also valid: {cara.competitors.filter(c=>norm(c)!==norm(result.acceptedAnswer||cara.answer)).join(" · ")}</div>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── STATS SIDEBAR (always visible during play) ──────────────
+function StatsSidebar({ cara }) {
+  const stats = cara.stats || {views:"1.2k"};
+  return (
+    <div className="tiktok-sidebar">
+      <div className="tiktok-stat">
+        <span style={{fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>▶</span>
+        <span className="tiktok-stat-num">{stats.views}</span>
+      </div>
+      <div className="tiktok-stat">
+        <span style={{fontSize:13,fontWeight:900,color:"#4ADE80",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>✓</span>
+        <span className="tiktok-stat-num" style={{color:"#4ADE80"}}>{cara.firstGuessRate}%</span>
+      </div>
+      <div className="tiktok-stat">
+        <span style={{fontSize:13,fontWeight:900,color:"#FF8A65",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>✗</span>
+        <span className="tiktok-stat-num" style={{color:"#FF8A65"}}>{100-cara.firstGuessRate}%</span>
       </div>
     </div>
   );
@@ -927,6 +943,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
           <VideoBlock cara={cara} height="60vh"/>
           {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
           {phase==="playing"&&<BlurredCommentsScroll/>}
+          {phase==="playing"&&<StatsSidebar cara={cara}/>}
           {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
         </div>
         {/* +15s BUTTON */}
