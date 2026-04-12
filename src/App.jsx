@@ -495,15 +495,19 @@ function TikTokReveal({ cara, result }) {
 
   return (
     <div className="tiktok-overlay">
-      {/* SIDEBAR — views + comments only */}
+      {/* SIDEBAR — same as during gameplay */}
       <div className="tiktok-sidebar">
         <div className="tiktok-stat">
-          <span className="tiktok-stat-icon">👁</span>
+          <span style={{fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>▶</span>
           <span className="tiktok-stat-num">{stats.views||"1.2k"}</span>
         </div>
         <div className="tiktok-stat">
-          <span className="tiktok-stat-icon">💬</span>
-          <span className="tiktok-stat-num">{stats.comments}</span>
+          <span style={{fontSize:13,fontWeight:900,color:"#4ADE80",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>✓</span>
+          <span className="tiktok-stat-num" style={{color:"#4ADE80"}}>{cara.firstGuessRate}%</span>
+        </div>
+        <div className="tiktok-stat">
+          <span style={{fontSize:13,fontWeight:900,color:"#FF8A65",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>✗</span>
+          <span className="tiktok-stat-num" style={{color:"#FF8A65"}}>{100-cara.firstGuessRate}%</span>
         </div>
       </div>
 
