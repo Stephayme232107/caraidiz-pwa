@@ -444,14 +444,22 @@ function VideoPreloader({ currentIndex }) {
 }
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, height="60vh", frozen=false }) {
+function VideoBlock({ cara, height="60vh", frozen=false, onReady }) {
   const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
   const em  = CAT_EMOJI[cara.category]||"💎";
   useEffect(() => {
     setMuted(true);
-    if (ref.current) { ref.current.muted=true; ref.current.play().catch(()=>{}); }
+    if (ref.current) {
+      ref.current.muted=true;
+      ref.current.play().catch(()=>{});
+      // fire onReady when video can play
+      const handler = () => onReady?.();
+      ref.current.addEventListener("canplay", handler, {once:true});
+      // fallback: if already ready
+      if (ref.current.readyState >= 3) onReady?.();
+    }
     if (frozen&&ref.current) ref.current.pause();
   }, [cara.id, frozen]);
   function toggle() {
@@ -476,14 +484,15 @@ function VideoBlock({ cara, height="60vh", frozen=false }) {
 }
 
 // ─── TIMER OVERLAY (on video) ─────────────────────────────────
-function TimerOverlay({ timeLeft, maxTime }) {
+function TimerOverlay({ timeLeft, maxTime, ready }) {
   const cls  = timeLeft>15?"ok":timeLeft>8?"warn":"danger";
-  const tCol = timeLeft>15?"#80DEEA":timeLeft>8?"#FACC15":"#FF8A65";
-  const pct  = Math.min(100,(timeLeft/maxTime)*100);
   return (
     <div className="timer-overlay">
-      <div className={`timer-circle ${cls}`}>{timeLeft}</div>
-      <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>sec</div>
+      {ready
+        ? <div className={`timer-circle ${cls}`}>{timeLeft}</div>
+        : <div className="timer-circle ok" style={{fontSize:11,letterSpacing:0}}>⏳</div>
+      }
+      <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>{ready?"sec":"loading"}</div>
     </div>
   );
 }
@@ -892,8 +901,8 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
                 return (
                   <div key={li2} style={{
                     width:32, height:38, borderRadius:8,
-                    border:`2px solid ${flash==="wrong"&&letter?"rgba(255,138,101,0.8)":flash==="correct"&&letter?"rgba(74,222,128,0.8)":letter?"#80DEEA":isNext?"rgba(128,222,234,0.5)":"rgba(128,222,234,0.25)"}`,
-                    background:flash==="wrong"&&letter?"rgba(255,138,101,0.12)":flash==="correct"&&letter?"rgba(74,222,128,0.12)":letter?"rgba(128,222,234,0.1)":"rgba(128,222,234,0.03)",
+                    border:`2px solid ${flash==="wrong"&&letter?"rgba(255,100,80,0.9)":flash==="correct"&&letter?"rgba(74,222,128,0.9)":letter?"rgba(255,255,255,0.9)":isNext?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.35)"}`,
+                    background:flash==="wrong"&&letter?"rgba(255,100,80,0.15)":flash==="correct"&&letter?"rgba(74,222,128,0.15)":letter?"rgba(0,0,0,0.45)":"transparent",
                     display:"flex",alignItems:"center",justifyContent:"center",
                     fontFamily:"'Bebas Neue',sans-serif",fontSize:18,
                     color:flash==="wrong"?"#FF8A65":flash==="correct"?"#4ADE80":"#fff",
@@ -1054,12 +1063,14 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
   const [phase,    setPhase]    = useState("playing");
   const [result,   setResult]   = useState(null);
   const [extended, setExtended] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const maxTime = extended ? TIMER_DURATION + EXTEND_SECS : TIMER_DURATION;
 
-  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); },[cara.id]);
+  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); setVideoReady(false); },[cara.id]);
 
   useEffect(()=>{
     if (phase!=="playing") return;
+    if (!videoReady) return; // ← freeze until video ready
     if (timeLeft<=0) {
       SFX.timeUp();
       mp.track("timer_expired",{cara_id:cara.id});
@@ -1069,7 +1080,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
     if (timeLeft<=5) SFX.tick();
     const t=setTimeout(()=>setTimeLeft(s=>s-1),1000);
     return()=>clearTimeout(t);
-  },[timeLeft,phase]);
+  },[timeLeft,phase,videoReady]);
 
   function handleResult(res) { setResult({...res,extended}); setPhase("revealed"); }
 
@@ -1105,8 +1116,8 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         </div>
         {/* VIDEO + TIMER OVERLAY */}
         <div style={{position:"relative"}}>
-          <VideoBlock cara={cara} height="60vh"/>
-          {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
+          <VideoBlock cara={cara} height="60vh" onReady={()=>setVideoReady(true)}/>
+          {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime} ready={videoReady}/>}
           {phase==="playing"&&<BlurredCommentsScroll/>}
           {phase==="playing"&&<StatsSidebar cara={cara}/>}
           {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
