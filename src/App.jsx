@@ -794,22 +794,23 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
   );
 }
 
-// ─── HYBRID INPUT — Draw Something style ──────────────────────
+// ─── HYBRID INPUT — Unified tile system (all Cara types) ──────
 function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
-  const [value,    setValue]    = useState("");
-  const [flash,    setFlash]    = useState(null);
+  const isBrand     = !!cara.competitors;
+  const answerClean = cara.answer.toUpperCase().replace(/[^A-Z ]/g,"");
+  const words       = answerClean.split(" ");
+  const totalL      = answerClean.replace(/ /g,"").length;
+  const BRAND_MAX   = 10;
+  const maxLen      = isBrand ? BRAND_MAX : totalL;
+
+  const [typed,    setTyped]    = useState([]);   // array of uppercase chars
+  const [flash,    setFlash]    = useState(null);  // null | 'wrong' | 'correct'
+  const [popping,  setPopping]  = useState(null);  // index of tile currently animating
   const [showHint, setShowHint] = useState(false);
   const [kbHeight, setKbHeight] = useState(0);
-  const [lastLen,  setLastLen]  = useState(0);
   const inputRef = useRef(null);
 
-  const isBrand    = !!cara.competitors;
-  const answerClean= cara.answer.toUpperCase().replace(/[^A-Z ]/g,"");
-  const words      = answerClean.split(" ");
-  const totalL     = answerClean.replace(/ /g,"").length;
-  const cleanVal   = value.replace(/[^A-Za-z]/g,"").toUpperCase().slice(0, isBrand?12:totalL);
-
-  // visualViewport keyboard detection
+  // visualViewport keyboard detection (iOS/Android)
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -819,174 +820,220 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
   }, []);
 
-  useEffect(()=>{ setValue(""); setFlash(null); setShowHint(false); setLastLen(0); },[cara.id]);
+  useEffect(()=>{ setTyped([]); setFlash(null); setPopping(null); setShowHint(false); },[cara.id]);
   useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
   useEffect(()=>{ setTimeout(()=>inputRef.current?.focus(),350); },[cara.id]);
 
-  // Track last length for pop animation
-  useEffect(()=>{ setLastLen(cleanVal.length); },[cleanVal]);
-
-  // Auto-submit when all slots filled
+  // Auto-submit when last tile filled (non-brand only)
   useEffect(()=>{
-    if (!isBrand && cleanVal.length===totalL && cleanVal.length>0) {
-      setTimeout(()=>checkGuess(cleanVal), 150);
+    if (!isBrand && typed.length===totalL && typed.length>0) {
+      const t = setTimeout(()=>checkGuess(typed.join("")), 150);
+      return ()=>clearTimeout(t);
     }
-  },[cleanVal]);
+  },[typed]);
+
+  function addLetter(key) {
+    if (typed.length>=maxLen || flash) return;
+    SFX.tap();
+    const idx = typed.length;
+    setTyped(prev=>[...prev, key]);
+    setPopping(idx);
+    setTimeout(()=>setPopping(null), 150);
+  }
+
+  function deleteLetter() {
+    if (!typed.length) return;
+    SFX.del();
+    setTyped(prev=>prev.slice(0,-1));
+  }
 
   function checkGuess(guess) {
-    const ok = isBrand ? isBrandCorrect(guess,cara) : norm(guess)===norm(cara.answer);
-    const accepted = ok?(isBrand?getAcceptedBrand(guess,cara):cara.answer):null;
-    const speed = ok&&timeLeft>20;
-    const na = attempts+1; setAttempts(na);
+    const ok       = isBrand ? isBrandCorrect(guess,cara) : norm(guess)===norm(cara.answer);
+    const accepted = ok ? (isBrand ? getAcceptedBrand(guess,cara) : cara.answer) : null;
+    const speed    = ok && timeLeft>20;
+    const na       = attempts+1; setAttempts(na);
+    setFlash(ok?"correct":"wrong");
     mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
     if (ok) {
-      SFX.correct(); setFlash("correct");
+      SFX.correct();
       setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:guess,acceptedAnswer:accepted}),500);
     } else if (na>=MAX_ATTEMPTS) {
-      SFX.wrong(); setFlash("wrong");
+      SFX.wrong();
       setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess}),600);
     } else {
-      SFX.wrong(); setFlash("wrong");
-      setTimeout(()=>{ setValue(""); setFlash(null); setLastLen(0); inputRef.current?.focus(); },700);
+      SFX.wrong();
+      setTimeout(()=>{ setTyped([]); setFlash(null); setPopping(null); inputRef.current?.focus(); },700);
     }
   }
 
-  function submit() { if (isBrand&&cleanVal.length>=2) checkGuess(cleanVal); }
+  function submit() { if (typed.length>=2) checkGuess(typed.join("")); }
 
-  let li=0;
-  const wordSlots=words.map(w=>w.split("").map(()=>{ const l=cleanVal[li]||null; li++; return l; }));
+  // ── Tile renderer ────────────────────────────────────────────
+  function renderTile(idx) {
+    const isFilled = idx < typed.length;
+    const isActive = idx === typed.length;
+    const letter   = isFilled ? typed[idx] : "";
+    const isPop    = popping===idx;
 
-  // Tile style helper
-  function tileStyle(letter, isNext, absIdx) {
-    const justFilled = letter && absIdx === cleanVal.length - 1;
-    let borderColor, bg, color;
+    let bg, border, shadow="none", color="#fff", anim;
+
     if (flash==="wrong") {
-      borderColor = letter ? "rgba(255,80,80,0.9)" : "rgba(255,80,80,0.3)";
-      bg = letter ? "rgba(255,80,80,0.2)" : "rgba(0,0,0,0.5)";
-      color = "#FF5050";
+      bg     = isFilled ? "rgba(255,70,70,0.25)"  : "rgba(255,255,255,0.05)";
+      border = isFilled ? "rgba(255,70,70,0.9)"   : "rgba(255,70,70,0.28)";
+      color  = isFilled ? "#FF6060" : "rgba(255,255,255,0.2)";
+      anim   = isFilled ? "slotWrong .35s ease" : undefined;
     } else if (flash==="correct") {
-      borderColor = letter ? "rgba(74,222,128,0.95)" : "rgba(74,222,128,0.3)";
-      bg = letter ? "rgba(74,222,128,0.25)" : "rgba(0,0,0,0.5)";
-      color = "#4ADE80";
-    } else if (letter) {
-      borderColor = "rgba(255,255,255,0.85)";
-      bg = "rgba(20,20,35,0.75)";
-      color = "#fff";
-    } else if (isNext) {
-      borderColor = "rgba(128,222,234,0.8)";
-      bg = "rgba(128,222,234,0.08)";
-      color = "#80DEEA";
+      bg     = isFilled ? "rgba(74,222,128,0.25)"  : "rgba(255,255,255,0.05)";
+      border = isFilled ? "rgba(74,222,128,0.9)"   : "rgba(74,222,128,0.25)";
+      color  = isFilled ? "#4ADE80" : "rgba(255,255,255,0.2)";
+      anim   = isFilled ? "slotCorrect .3s ease" : undefined;
+    } else if (isFilled) {
+      bg     = "#2563EB";
+      border = "#2563EB";
+      shadow = "0 2px 12px rgba(37,99,235,0.55)";
+      anim   = isPop ? "slotPop .13s ease-out" : undefined;
+    } else if (isActive) {
+      bg     = "rgba(255,255,255,0.07)";
+      border = "#60A5FA";
+      shadow = "0 0 0 2px rgba(96,165,250,0.35)";
     } else {
-      borderColor = "rgba(0,0,0,0.7)";
-      bg = "rgba(0,0,0,0.35)";
-      color = "rgba(255,255,255,0.2)";
+      bg     = "rgba(255,255,255,0.05)";
+      border = "rgba(255,255,255,0.2)";
+      color  = "rgba(255,255,255,0.15)";
     }
-    return {
-      width:34, height:42, borderRadius:9,
-      border:`2.5px solid ${borderColor}`,
-      background:bg,
-      display:"flex",alignItems:"center",justifyContent:"center",
-      fontFamily:"'Bebas Neue',sans-serif", fontSize:20, fontWeight:700,
-      color, letterSpacing:".04em",
-      textShadow: letter?"0 1px 3px rgba(0,0,0,0.7)":"none",
-      animation: flash==="wrong"&&letter ? "slotWrong .35s ease"
-               : flash==="correct"&&letter ? "slotCorrect .3s ease"
-               : justFilled ? "slotPop .13s ease-out"
-               : undefined,
-      transition:"border-color .1s,background .1s",
-      boxShadow: isNext ? "0 0 0 3px rgba(128,222,234,0.2)" : "none",
-      cursor:"text",
-    };
+
+    return (
+      <div key={idx} style={{
+        width:34, height:42, borderRadius:8,
+        border:`2.5px solid ${border}`,
+        background:bg, boxShadow:shadow,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontFamily:"'Bebas Neue',sans-serif", fontSize:20, fontWeight:700,
+        color, letterSpacing:".04em",
+        textShadow: isFilled ? "0 1px 3px rgba(0,0,0,0.5)" : "none",
+        animation:anim,
+        transition:"border-color .12s,background .1s,box-shadow .12s",
+        userSelect:"none", flexShrink:0,
+      }}>
+        {letter}
+      </div>
+    );
+  }
+
+  // ── Build tile rows ──────────────────────────────────────────
+  // Non-brand: follow word structure, wrap at 9 per row
+  // Brand: single dynamic row (grows with input, max BRAND_MAX)
+  const tileRows = [];
+
+  if (!isBrand) {
+    let gi = 0;
+    const wordTiles = words.map(w=>w.split("").map(()=>({ idx:gi++, gap:false })));
+    const MAX_PER_ROW = 9;
+    let line = [], count = 0;
+    wordTiles.forEach((word, wi) => {
+      if (count+word.length>MAX_PER_ROW && line.length>0) {
+        tileRows.push(line); line=[]; count=0;
+      }
+      if (line.length>0) line.push({ gap:true, key:`g${wi}` });
+      line.push(...word);
+      count += word.length;
+    });
+    if (line.length>0) tileRows.push(line);
+  } else {
+    // Brand: show typed.length + 1 active slot, min 4, max BRAND_MAX
+    const show = Math.min(Math.max(typed.length+1, 4), BRAND_MAX);
+    tileRows.push(Array.from({length:show},(_,i)=>({idx:i,gap:false})));
   }
 
   return (
     <div style={{
       position:"fixed", bottom:kbHeight, left:0, right:0,
       maxWidth:420, margin:"0 auto",
-      background:"rgba(8,8,20,0.82)",
+      background:"rgba(8,8,20,0.88)",
       borderTop:"1px solid rgba(255,255,255,0.07)",
       padding:"10px 16px 16px",
       zIndex:50,
       transition:"bottom .15s ease-out",
     }} onClick={()=>inputRef.current?.focus()}>
 
-      {/* hidden native input */}
+      {/* Ghost input — captures native keyboard on iOS/Android */}
       <input
         ref={inputRef}
         style={{position:"absolute",opacity:0,pointerEvents:"none",width:1,height:1,top:0}}
-        value={value}
-        onChange={e=>setValue(e.target.value)}
-        onKeyDown={e=>{ if(e.key==="Enter") submit(); if(e.key==="Backspace") setValue(v=>v.slice(0,-1)); }}
-        autoComplete="off" autoCorrect="off" autoCapitalize="characters" spellCheck={false}
+        value=""
+        onChange={()=>{}}
+        onKeyDown={e=>{
+          if (e.key==="Backspace")          { e.preventDefault(); deleteLetter(); }
+          else if (e.key==="Enter")          { submit(); }
+          else if (/^[a-zA-Z]$/.test(e.key)) { e.preventDefault(); addLetter(e.key.toUpperCase()); }
+        }}
+        onInput={e=>{
+          // Handles composition on Android GBoard
+          const v = e.target.value;
+          if (v) {
+            v.toUpperCase().split("").filter(c=>/[A-Z]/.test(c)).forEach(c=>addLetter(c));
+            e.target.value="";
+          }
+        }}
+        autoComplete="off" autoCorrect="off" autoCapitalize="characters"
+        spellCheck={false} inputMode="text"
       />
 
-      {showHint&&<div style={{marginBottom:8,padding:"6px 12px",background:"rgba(255,138,101,0.1)",border:"1px solid rgba(255,138,101,0.3)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>💡 {cara.hint}</div>}
+      {showHint&&(
+        <div style={{marginBottom:8,padding:"6px 12px",background:"rgba(255,138,101,0.1)",border:"1px solid rgba(255,138,101,0.3)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>
+          💡 {cara.hint}
+        </div>
+      )}
 
-      {/* attempt dots + label */}
+      {/* Attempt counter */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-        <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>
-          {attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:isBrand?"Tap to type a brand…":`${cara.wordCount===1?"1 word":`${cara.wordCount} words`}`}
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.45)",textTransform:"uppercase",letterSpacing:".08em"}}>
+          {attempts>0 ? `Attempt ${attempts+1} of ${MAX_ATTEMPTS}` : isBrand ? "Type a brand…" : cara.wordCount===1?"1 word":`${cara.wordCount} words`}
         </div>
         <div style={{display:"flex",gap:5}}>
           {Array.from({length:MAX_ATTEMPTS}).map((_,i)=>(
-            <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<attempts?"#FF8A65":i===attempts?"rgba(128,222,234,0.6)":"rgba(255,255,255,0.12)",transition:"background .3s"}}/>
+            <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<attempts?"#FF8A65":i===attempts?"rgba(96,165,250,0.7)":"rgba(255,255,255,0.12)",transition:"background .3s"}}/>
           ))}
         </div>
       </div>
 
-      {/* SLOTS */}
-      {!isBrand ? (
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:12}} onClick={()=>inputRef.current?.focus()}>
-          {wordSlots.map((w,wi)=>(
-            <div key={wi} style={{display:"flex",alignItems:"center",gap:5}}>
-              {w.map((letter,li2)=>{
-                const absIdx = wordSlots.slice(0,wi).reduce((a,x)=>a+x.length,0)+li2;
-                const isNext = !letter && cleanVal.length===absIdx;
-                return <div key={li2} style={tileStyle(letter,isNext,absIdx)}>{letter||""}</div>;
-              })}
-              {wi<wordSlots.length-1&&(
-                <div style={{width:8,height:4,borderRadius:2,background:"rgba(255,255,255,0.2)",margin:"0 2px"}}/>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div style={{
-          width:"100%", minHeight:52,
-          background:"rgba(20,20,35,0.8)",
-          border:`2.5px solid ${flash==="wrong"?"rgba(255,80,80,0.8)":flash==="correct"?"rgba(74,222,128,0.8)":"rgba(255,255,255,0.3)"}`,
-          borderRadius:14, padding:"13px 16px",
-          fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:".08em",
-          color: cleanVal?"#fff":"rgba(255,255,255,0.2)",
-          textShadow:"0 1px 3px rgba(0,0,0,0.6)",
-          cursor:"text", marginBottom:12,
-          animation:flash==="wrong"?"slotWrong .35s ease":undefined,
-          transition:"border-color .15s"
-        }}>
-          {cleanVal||"TYPE A BRAND…"}
-        </div>
-      )}
+      {/* ── TILES — identical design for all Cara types ── */}
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:12}}>
+        {tileRows.map((row,ri)=>(
+          <div key={ri} style={{display:"flex",alignItems:"center",gap:5}}>
+            {row.map(item=>{
+              if (item.gap) return (
+                <div key={item.key} style={{width:8,height:3,borderRadius:2,background:"rgba(255,255,255,0.18)",margin:"0 1px",flexShrink:0}}/>
+              );
+              return renderTile(item.idx);
+            })}
+          </div>
+        ))}
+      </div>
 
-      {/* buttons */}
+      {/* Buttons */}
       <div style={{display:"flex",gap:8}}>
         {isBrand&&(
           <button style={{
-            flex:1, background:cleanVal.length>=2?"#80DEEA":"rgba(128,222,234,0.3)",
+            flex:1,
+            background: typed.length>=2 ? "#80DEEA" : "rgba(128,222,234,0.2)",
             color:"#0A0A0F", border:"none",
             borderRadius:12, padding:13,
             fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:".06em",
-            cursor:"pointer", transition:"background .2s,transform .1s",
-          }} onMouseDown={e=>e.currentTarget.style.transform="scale(.97)"}
-             onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
-             onClick={submit}>✓ GUESS</button>
+            cursor: typed.length>=2 ? "pointer" : "default",
+            transition:"background .2s,transform .1s",
+          }}
+          onPointerDown={e=>{e.currentTarget.style.transform="scale(.97)"}}
+          onPointerUp={e=>{e.currentTarget.style.transform="scale(1)"}}
+          onClick={submit}>✓ GUESS</button>
         )}
         <button style={{
-          flex:isBrand?0:1,
+          flex: isBrand ? 0 : 1,
           background:"rgba(255,255,255,0.05)",
           border:"1.5px solid rgba(255,255,255,0.15)",
           borderRadius:12, padding:"13px 18px",
           color:"rgba(255,255,255,0.5)",
-          fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer"
+          fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer",
         }} onClick={onSkip}>Skip</button>
       </div>
     </div>
