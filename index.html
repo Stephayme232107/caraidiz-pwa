@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 
     <!-- ─── Primary Meta ─────────────────────────────────── -->
     <title>Caraidiz 💎 — watching becomes playing</title>
@@ -77,19 +77,11 @@
             .register("/sw.js")
             .then((reg) => {
               console.log("✅ Caraidiz SW registered:", reg.scope);
-
-              // Check for updates every time the app loads
               reg.update();
-
-              // Notify user when a new version is available
               reg.addEventListener("updatefound", () => {
                 const newWorker = reg.installing;
                 newWorker.addEventListener("statechange", () => {
-                  if (
-                    newWorker.state === "installed" &&
-                    navigator.serviceWorker.controller
-                  ) {
-                    // Optional: show "Update available" banner
+                  if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
                     console.log("🔄 New version available — reload to update");
                   }
                 });
