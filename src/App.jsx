@@ -428,6 +428,7 @@ const G = `
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   @keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 `;
 
 // ─── VIDEO PRELOADER ─────────────────────────────────────────
@@ -445,34 +446,45 @@ function VideoPreloader({ currentIndex }) {
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
 function VideoBlock({ cara, height="60vh", frozen=false, onReady }) {
-  const [muted, setMuted] = useState(true);
+  const [muted,   setMuted]   = useState(true);
+  const [loading, setLoading] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
   const em  = CAT_EMOJI[cara.category]||"💎";
+
   useEffect(() => {
-    setMuted(true);
-    if (ref.current) {
-      ref.current.muted=true;
-      ref.current.play().catch(()=>{});
-      // fire onReady when video can play
-      const handler = () => onReady?.();
-      ref.current.addEventListener("canplay", handler, {once:true});
-      // fallback: if already ready
-      if (ref.current.readyState >= 3) onReady?.();
-    }
-    if (frozen&&ref.current) ref.current.pause();
+    setLoading(true); setMuted(true);
+    if (!ref.current) return;
+    ref.current.muted = true;
+    const handleReady = () => { setLoading(false); onReady?.(); };
+    ref.current.addEventListener("canplay", handleReady, {once:true});
+    const fallback = setTimeout(()=>handleReady(), 4000); // 4s max wait
+    ref.current.load();
+    ref.current.play().catch(()=>{});
+    if (frozen) ref.current.pause();
+    if (ref.current.readyState >= 3) { clearTimeout(fallback); handleReady(); }
+    return () => clearTimeout(fallback);
   }, [cara.id, frozen]);
+
   function toggle() {
     SFX.init();
     const n=!muted; setMuted(n); SFX._on=n; saveJSON("crz_sfx",n);
     if (ref.current) ref.current.muted=n;
   }
+
   return (
     <div className="vid-wrap" style={{height}}>
       {cara.videoUrl
         ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline preload="auto" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center center"}}/>
-        : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
+        : null
       }
+      {/* Loading shimmer */}
+      {loading&&(
+        <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#0D0D1A,#1A1030,#0D0D1A)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
+          <div style={{width:48,height:48,borderRadius:"50%",border:"3px solid rgba(128,222,234,0.2)",borderTopColor:"#80DEEA",animation:"spin .8s linear infinite"}}/>
+          <div style={{fontSize:11,color:"rgba(128,222,234,0.6)",letterSpacing:".1em",textTransform:"uppercase"}}>Loading video…</div>
+        </div>
+      )}
       <div className="vid-gradient"/>
       <div className="cat-badge" style={{background:cc,color:"#000",border:"none",fontSize:13,fontWeight:900,padding:"7px 14px",top:12,left:12}}>
         <span>{em}</span>
@@ -490,9 +502,9 @@ function TimerOverlay({ timeLeft, maxTime, ready }) {
     <div className="timer-overlay">
       {ready
         ? <div className={`timer-circle ${cls}`}>{timeLeft}</div>
-        : <div className="timer-circle ok" style={{fontSize:11,letterSpacing:0}}>⏳</div>
+        : <div className="timer-circle ok" style={{fontSize:12}}>⏳</div>
       }
-      <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>{ready?"sec":"loading"}</div>
+      <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>{ready?"sec":"wait"}</div>
     </div>
   );
 }
@@ -901,13 +913,14 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
                 return (
                   <div key={li2} style={{
                     width:32, height:38, borderRadius:8,
-                    border:`2px solid ${flash==="wrong"&&letter?"rgba(255,100,80,0.9)":flash==="correct"&&letter?"rgba(74,222,128,0.9)":letter?"rgba(255,255,255,0.9)":isNext?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.35)"}`,
-                    background:flash==="wrong"&&letter?"rgba(255,100,80,0.15)":flash==="correct"&&letter?"rgba(74,222,128,0.15)":letter?"rgba(0,0,0,0.45)":"transparent",
+                    border:`2px solid ${flash==="wrong"&&letter?"#FF8A65":flash==="correct"&&letter?"#4ADE80":letter?"#fff":"rgba(255,255,255,0.5)"}`,
+                    background:flash==="wrong"&&letter?"rgba(255,100,80,0.2)":flash==="correct"&&letter?"rgba(74,222,128,0.2)":letter?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)",
                     display:"flex",alignItems:"center",justifyContent:"center",
                     fontFamily:"'Bebas Neue',sans-serif",fontSize:18,
                     color:flash==="wrong"?"#FF8A65":flash==="correct"?"#4ADE80":"#fff",
                     animation: letter&&!cleanVal[wordSlots.slice(0,wi).reduce((a,x)=>a+x.length,0)+li2-1]?"slotPop .12s ease-out":undefined,
-                    transition:"border-color .15s,background .15s"
+                    transition:"border-color .15s,background .15s",
+                    boxShadow: isNext?"0 0 0 2px rgba(128,222,234,0.4)":"none"
                   }}>{letter||""}</div>
                 );
               })}
@@ -1059,18 +1072,18 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
 
 // ─── GAME SCREEN ──────────────────────────────────────────────
 function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttempts, onResult, onSkip }) {
-  const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
-  const [phase,    setPhase]    = useState("playing");
-  const [result,   setResult]   = useState(null);
-  const [extended, setExtended] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
+  const [timeLeft,    setTimeLeft]    = useState(TIMER_DURATION);
+  const [phase,       setPhase]       = useState("playing");
+  const [result,      setResult]      = useState(null);
+  const [extended,    setExtended]    = useState(false);
+  const [videoReady,  setVideoReady]  = useState(false);
   const maxTime = extended ? TIMER_DURATION + EXTEND_SECS : TIMER_DURATION;
 
   useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); setVideoReady(false); },[cara.id]);
 
   useEffect(()=>{
     if (phase!=="playing") return;
-    if (!videoReady) return; // ← freeze until video ready
+    if (!videoReady) return; // ← timer frozen until video ready
     if (timeLeft<=0) {
       SFX.timeUp();
       mp.track("timer_expired",{cara_id:cara.id});
