@@ -351,14 +351,6 @@ const G = `
   .t-btn.del{border-color:rgba(255,138,101,0.3);color:#FF8A65;background:rgba(255,138,101,0.07)}
   .t-btn.skip{color:#8888AA;font-size:11px}
 
-  /* ── NATIVE INPUT ── */
-  .native-input{width:100%;background:rgba(255,255,255,0.06);border:2px solid rgba(128,222,234,0.35);border-radius:14px;padding:14px 16px;color:#fff;font-size:20px;font-family:'Bebas Neue',sans-serif;letter-spacing:.08em;outline:none;caret-color:#80DEEA;transition:border-color .2s}
-  .native-input::placeholder{color:rgba(255,255,255,0.25);font-family:'DM Sans',sans-serif;font-size:14px;letter-spacing:0;font-weight:500}
-  .native-input:focus{border-color:rgba(128,222,234,0.7)}
-  .submit-btn{flex:1;background:#80DEEA;color:#0A0A0F;border:none;border-radius:12px;padding:13px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;cursor:pointer;transition:opacity .2s,transform .1s}
-  .submit-btn:active{transform:scale(.97)}
-  .skip-btn{background:transparent;border:1.5px solid rgba(255,255,255,0.12);border-radius:12px;padding:13px 18px;color:#8888AA;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
-
   /* ── BRAND GUESS BAR ── */
   .brand-bar{margin:6px 16px 4px;padding:10px 14px;min-height:46px;background:rgba(255,255,255,0.04);border-radius:14px;display:flex;align-items:center;flex-shrink:0;transition:border-color .2s}
 
@@ -474,7 +466,7 @@ function VideoBlock({ cara, height="60vh", frozen=false }) {
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
       <div className="vid-gradient"/>
-      <div className="cat-badge" style={{background:cc,color:"#000",border:"none",fontSize:12,fontWeight:900,padding:"6px 14px",top:12,left:12}}>
+      <div className="cat-badge" style={{background:cc,color:"#000",border:"none",fontSize:13,fontWeight:900,padding:"7px 14px",top:12,left:12,letterSpacing:".06em"}}>
         <span>{em}</span>
         <span>{cara.category.toUpperCase()} · {cara.wordCount===1?"1 WORD":`${cara.wordCount} WORDS`}</span>
       </div>
@@ -637,70 +629,7 @@ function CommentsRevealed({ caraId, result }) {
   );
 }
 
-// ─── NATIVE INPUT (replaces all tile keyboards) ───────────────
-function NativeInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
-  const [value,    setValue]    = useState("");
-  const [flash,    setFlash]    = useState(null);
-  const [showHint, setShowHint] = useState(false);
-  const inputRef = useRef(null);
-
-  useEffect(()=>{ setValue(""); setFlash(null); setShowHint(false); },[cara.id]);
-  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
-  useEffect(()=>{ setTimeout(()=>inputRef.current?.focus(),300); },[cara.id]);
-
-  function submit() {
-    const guess=value.trim();
-    if (!guess) return;
-    const ok=cara.competitors ? isBrandCorrect(guess,cara) : norm(guess)===norm(cara.answer);
-    const accepted=ok?(cara.competitors?getAcceptedBrand(guess,cara):cara.answer):null;
-    const speed=ok&&timeLeft>20;
-    const na=attempts+1; setAttempts(na);
-    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
-    if (ok) {
-      SFX.correct(); setFlash("correct");
-      setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:guess,acceptedAnswer:accepted}),500);
-    } else if (na>=MAX_ATTEMPTS) {
-      SFX.wrong(); setFlash("wrong");
-      setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess}),600);
-    } else {
-      SFX.wrong(); setFlash("wrong");
-      setTimeout(()=>{ setValue(""); setFlash(null); inputRef.current?.focus(); },700);
-    }
-  }
-
-  const wordHint = cara.category==="Brand" ? "Type a brand name…" : cara.wordCount===1 ? "1 word" : `${cara.wordCount} words`;
-
-  return (
-    <>
-      {showHint&&<div style={{margin:"6px 16px 4px",padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65",flexShrink:0}}>💡 {cara.hint}</div>}
-      <div style={{padding:"10px 16px 8px",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>
-            {attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:wordHint}
-          </div>
-          <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.12)"}}/>)}</div>
-        </div>
-        <input
-          ref={inputRef}
-          className="native-input"
-          style={{borderColor:flash==="wrong"?"rgba(255,138,101,0.7)":flash==="correct"?"rgba(74,222,128,0.7)":"rgba(128,222,234,0.35)",animation:flash==="wrong"?"shake .3s ease":undefined}}
-          value={value}
-          onChange={e=>setValue(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&submit()}
-          placeholder={cara.category==="Brand"?"Type a brand…":"Type your answer…"}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="characters"
-          spellCheck={false}
-        />
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          <button className="submit-btn" style={{opacity:value.trim()?1:0.4}} onClick={submit}>✓ GUESS</button>
-          <button className="skip-btn" onClick={onSkip}>Skip</button>
-        </div>
-      </div>
-    </>
-  );
-}
+// ─── BRAND TILE INPUT ─────────────────────────────────────────
 function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
   const [tiles,    setTiles]    = useState(()=>buildBrandTiles(cara.competitors));
   const [selected, setSelected] = useState([]);
@@ -860,6 +789,116 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
         </div>
       </div>
     </>
+  );
+}
+
+// ─── NATIVE INPUT — TikTok style (floats above keyboard) ─────
+function NativeInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
+  const [value,    setValue]    = useState("");
+  const [flash,    setFlash]    = useState(null);
+  const [showHint, setShowHint] = useState(false);
+  const [kbHeight, setKbHeight] = useState(0);
+  const inputRef = useRef(null);
+
+  // visualViewport — detect keyboard height on iOS/Android
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function onResize() {
+      const kh = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbHeight(kh);
+    }
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
+  }, []);
+
+  useEffect(()=>{ setValue(""); setFlash(null); setShowHint(false); setKbHeight(0); },[cara.id]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
+  useEffect(()=>{ setTimeout(()=>inputRef.current?.focus(),350); },[cara.id]);
+
+  function submit() {
+    const guess=value.trim();
+    if (!guess) return;
+    const ok=cara.competitors ? isBrandCorrect(guess,cara) : norm(guess)===norm(cara.answer);
+    const accepted=ok?(cara.competitors?getAcceptedBrand(guess,cara):cara.answer):null;
+    const speed=ok&&timeLeft>20;
+    const na=attempts+1; setAttempts(na);
+    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
+    if (ok) {
+      SFX.correct(); setFlash("correct");
+      setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:guess,acceptedAnswer:accepted}),500);
+    } else if (na>=MAX_ATTEMPTS) {
+      SFX.wrong(); setFlash("wrong");
+      setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess}),600);
+    } else {
+      SFX.wrong(); setFlash("wrong");
+      setTimeout(()=>{ setValue(""); setFlash(null); inputRef.current?.focus(); },700);
+    }
+  }
+
+  const wordHint = cara.category==="Brand"?"Tap to type a brand…":cara.wordCount===1?"Tap to type — 1 word":`Tap to type — ${cara.wordCount} words`;
+
+  return (
+    <div style={{
+      position:"fixed",
+      bottom: kbHeight,
+      left:0, right:0,
+      maxWidth:420,
+      margin:"0 auto",
+      background:"#121220",
+      borderTop:"1px solid rgba(255,255,255,0.08)",
+      padding:"10px 16px 14px",
+      zIndex:50,
+      transition:"bottom .15s ease-out"
+    }}>
+      {showHint&&<div style={{marginBottom:8,padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>💡 {cara.hint}</div>}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+        <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>
+          {attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:wordHint}
+        </div>
+        <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.12)"}}/>)}</div>
+      </div>
+      <input
+        ref={inputRef}
+        style={{
+          width:"100%",
+          background:"rgba(255,255,255,0.06)",
+          border:`2px solid ${flash==="wrong"?"rgba(255,138,101,0.7)":flash==="correct"?"rgba(74,222,128,0.7)":"rgba(128,222,234,0.35)"}`,
+          borderRadius:14,
+          padding:"14px 16px",
+          color:"#fff",
+          fontSize:22,
+          fontFamily:"'Bebas Neue',sans-serif",
+          letterSpacing:".08em",
+          outline:"none",
+          caretColor:"#80DEEA",
+          animation:flash==="wrong"?"shake .3s ease":undefined,
+          boxSizing:"border-box"
+        }}
+        value={value}
+        onChange={e=>setValue(e.target.value)}
+        onKeyDown={e=>e.key==="Enter"&&submit()}
+        placeholder={cara.category==="Brand"?"Type a brand…":"Type your answer…"}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+      />
+      <div style={{display:"flex",gap:8,marginTop:8}}>
+        <button style={{
+          flex:1,background:"#80DEEA",color:"#0A0A0F",border:"none",
+          borderRadius:12,padding:13,fontFamily:"'Bebas Neue',sans-serif",
+          fontSize:18,letterSpacing:".06em",cursor:"pointer",
+          opacity:value.trim()?1:0.4,transition:"opacity .2s"
+        }} onClick={submit}>✓ GUESS</button>
+        <button style={{
+          background:"transparent",border:"1.5px solid rgba(255,255,255,0.12)",
+          borderRadius:12,padding:"13px 18px",color:"#8888AA",
+          fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer"
+        }} onClick={onSkip}>Skip</button>
+      </div>
+    </div>
   );
 }
 
@@ -1044,9 +1083,9 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
       </div>
 
       {/* ══ SCROLL ZONE ══ */}
-      <div className="game-scroll">
+      <div className="game-scroll" style={{paddingBottom: phase==="playing"?"120px":"0"}}>
 
-        {/* PLAYING */}
+        {/* PLAYING — NativeInput floats fixed above keyboard */}
         {phase==="playing"&&(
           <NativeInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
         )}
