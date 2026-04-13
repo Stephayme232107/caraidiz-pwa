@@ -941,7 +941,7 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     if (line.length>0) tileRows.push(line);
   } else {
     // Brand: show typed.length + 1 active slot, min 4, max BRAND_MAX
-    const show = Math.min(Math.max(typed.length+1, 4), BRAND_MAX);
+    const show = Math.min(Math.max(typed.length+1, totalL), BRAND_MAX);
     tileRows.push(Array.from({length:show},(_,i)=>({idx:i,gap:false})));
   }
 
