@@ -428,7 +428,6 @@ const G = `
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   @keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 `;
 
 // ─── VIDEO PRELOADER ─────────────────────────────────────────
@@ -445,46 +444,27 @@ function VideoPreloader({ currentIndex }) {
 }
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, height="60vh", frozen=false, onReady }) {
-  const [muted,   setMuted]   = useState(true);
-  const [loading, setLoading] = useState(true);
+function VideoBlock({ cara, height="60vh", frozen=false }) {
+  const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
   const em  = CAT_EMOJI[cara.category]||"💎";
-
   useEffect(() => {
-    setLoading(true); setMuted(true);
-    if (!ref.current) return;
-    ref.current.muted = true;
-    const handleReady = () => { setLoading(false); onReady?.(); };
-    ref.current.addEventListener("canplay", handleReady, {once:true});
-    const fallback = setTimeout(()=>handleReady(), 4000); // 4s max wait
-    ref.current.load();
-    ref.current.play().catch(()=>{});
-    if (frozen) ref.current.pause();
-    if (ref.current.readyState >= 3) { clearTimeout(fallback); handleReady(); }
-    return () => clearTimeout(fallback);
+    setMuted(true);
+    if (ref.current) { ref.current.muted=true; ref.current.play().catch(()=>{}); }
+    if (frozen&&ref.current) ref.current.pause();
   }, [cara.id, frozen]);
-
   function toggle() {
     SFX.init();
     const n=!muted; setMuted(n); SFX._on=n; saveJSON("crz_sfx",n);
     if (ref.current) ref.current.muted=n;
   }
-
   return (
     <div className="vid-wrap" style={{height}}>
       {cara.videoUrl
         ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline preload="auto" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center center"}}/>
-        : null
+        : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
-      {/* Loading shimmer */}
-      {loading&&(
-        <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#0D0D1A,#1A1030,#0D0D1A)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
-          <div style={{width:48,height:48,borderRadius:"50%",border:"3px solid rgba(128,222,234,0.2)",borderTopColor:"#80DEEA",animation:"spin .8s linear infinite"}}/>
-          <div style={{fontSize:11,color:"rgba(128,222,234,0.6)",letterSpacing:".1em",textTransform:"uppercase"}}>Loading video…</div>
-        </div>
-      )}
       <div className="vid-gradient"/>
       <div className="cat-badge" style={{background:cc,color:"#000",border:"none",fontSize:13,fontWeight:900,padding:"7px 14px",top:12,left:12}}>
         <span>{em}</span>
@@ -496,15 +476,14 @@ function VideoBlock({ cara, height="60vh", frozen=false, onReady }) {
 }
 
 // ─── TIMER OVERLAY (on video) ─────────────────────────────────
-function TimerOverlay({ timeLeft, maxTime, ready }) {
+function TimerOverlay({ timeLeft, maxTime }) {
   const cls  = timeLeft>15?"ok":timeLeft>8?"warn":"danger";
+  const tCol = timeLeft>15?"#80DEEA":timeLeft>8?"#FACC15":"#FF8A65";
+  const pct  = Math.min(100,(timeLeft/maxTime)*100);
   return (
     <div className="timer-overlay">
-      {ready
-        ? <div className={`timer-circle ${cls}`}>{timeLeft}</div>
-        : <div className="timer-circle ok" style={{fontSize:12}}>⏳</div>
-      }
-      <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>{ready?"sec":"wait"}</div>
+      <div className={`timer-circle ${cls}`}>{timeLeft}</div>
+      <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>sec</div>
     </div>
   );
 }
@@ -876,8 +855,10 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     <div style={{
       position:"fixed", bottom:kbHeight, left:0, right:0,
       maxWidth:420, margin:"0 auto",
-      background:"#121220",
-      borderTop:"1px solid rgba(255,255,255,0.08)",
+      background:"rgba(0,0,0,0.12)",
+      backdropFilter:"blur(2px)",
+      WebkitBackdropFilter:"blur(2px)",
+      borderTop:"1px solid rgba(255,255,255,0.06)",
       padding:"10px 16px 14px",
       zIndex:50,
       transition:"bottom .15s ease-out"
@@ -893,17 +874,17 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
         autoComplete="off" autoCorrect="off" autoCapitalize="characters" spellCheck={false}
       />
 
-      {showHint&&<div style={{marginBottom:8,padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>💡 {cara.hint}</div>}
+      {showHint&&<div style={{marginBottom:8,padding:"6px 12px",background:"rgba(0,0,0,0.4)",border:"1px solid rgba(255,138,101,0.35)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>💡 {cara.hint}</div>}
 
       {/* attempt dots + label */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:".08em",textShadow:"0 1px 3px rgba(0,0,0,0.8)"}}>
           {attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:isBrand?"Tap to type a brand…":`${cara.wordCount===1?"1 word":`${cara.wordCount} words`}`}
         </div>
-        <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.12)"}}/>)}</div>
+        <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.25)"}}/>)}</div>
       </div>
 
-      {/* SLOTS (non-brand) or free bar (brand) */}
+      {/* SLOTS — floating frames over video */}
       {!isBrand ? (
         <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",marginBottom:10,cursor:"text"}} onClick={()=>inputRef.current?.focus()}>
           {wordSlots.map((w,wi)=>(
@@ -912,15 +893,24 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
                 const isNext = !letter && cleanVal.length===wordSlots.slice(0,wi).reduce((a,x)=>a+x.length,0)+li2;
                 return (
                   <div key={li2} style={{
-                    width:32, height:38, borderRadius:8,
-                    border:`2px solid ${flash==="wrong"&&letter?"#FF8A65":flash==="correct"&&letter?"#4ADE80":letter?"#fff":"rgba(255,255,255,0.5)"}`,
-                    background:flash==="wrong"&&letter?"rgba(255,100,80,0.2)":flash==="correct"&&letter?"rgba(74,222,128,0.2)":letter?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)",
+                    width:34, height:40, borderRadius:8,
+                    border:`2.5px solid ${
+                      flash==="wrong"&&letter?"rgba(255,80,80,0.9)":
+                      flash==="correct"&&letter?"rgba(74,222,128,0.9)":
+                      letter?"rgba(255,255,255,0.9)":
+                      isNext?"rgba(255,255,255,0.55)":
+                      "rgba(0,0,0,0.75)"
+                    }`,
+                    background: letter
+                      ? "rgba(0,0,0,0.45)"
+                      : "rgba(0,0,0,0.15)",
                     display:"flex",alignItems:"center",justifyContent:"center",
-                    fontFamily:"'Bebas Neue',sans-serif",fontSize:18,
-                    color:flash==="wrong"?"#FF8A65":flash==="correct"?"#4ADE80":"#fff",
+                    fontFamily:"'Bebas Neue',sans-serif",fontSize:19,fontWeight:700,
+                    color: flash==="wrong"?"#FF5050":flash==="correct"?"#4ADE80":"#fff",
+                    textShadow:"0 1px 4px rgba(0,0,0,0.8)",
                     animation: letter&&!cleanVal[wordSlots.slice(0,wi).reduce((a,x)=>a+x.length,0)+li2-1]?"slotPop .12s ease-out":undefined,
                     transition:"border-color .15s,background .15s",
-                    boxShadow: isNext?"0 0 0 2px rgba(128,222,234,0.4)":"none"
+                    boxShadow: isNext?"0 0 0 1px rgba(255,255,255,0.2)":"none"
                   }}>{letter||""}</div>
                 );
               })}
@@ -931,11 +921,12 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
       ) : (
         <div style={{
           width:"100%", minHeight:50,
-          background:"rgba(255,255,255,0.06)",
-          border:`2px solid ${flash==="wrong"?"rgba(255,138,101,0.7)":flash==="correct"?"rgba(74,222,128,0.7)":"rgba(128,222,234,0.35)"}`,
+          background:"rgba(0,0,0,0.25)",
+          border:`2px solid ${flash==="wrong"?"rgba(255,80,80,0.8)":flash==="correct"?"rgba(74,222,128,0.8)":"rgba(255,255,255,0.3)"}`,
           borderRadius:14, padding:"12px 16px",
           fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:".08em",
-          color: cleanVal?"#fff":"rgba(255,255,255,0.25)",
+          color: cleanVal?"#fff":"rgba(255,255,255,0.35)",
+          textShadow:"0 1px 4px rgba(0,0,0,0.6)",
           cursor:"text", marginBottom:10,
           animation:flash==="wrong"?"shake .3s ease":undefined
         }}>
@@ -947,7 +938,9 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
       <div style={{display:"flex",gap:8}}>
         {isBrand&&(
           <button style={{
-            flex:1,background:"#80DEEA",color:"#0A0A0F",border:"none",
+            flex:1,
+            background:"rgba(128,222,234,0.85)",
+            color:"#0A0A0F",border:"none",
             borderRadius:12,padding:13,fontFamily:"'Bebas Neue',sans-serif",
             fontSize:18,letterSpacing:".06em",cursor:"pointer",
             opacity:cleanVal.length>=2?1:0.4,transition:"opacity .2s"
@@ -955,8 +948,10 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
         )}
         <button style={{
           flex:isBrand?0:1,
-          background:"transparent",border:"1.5px solid rgba(255,255,255,0.12)",
-          borderRadius:12,padding:"13px 18px",color:"#8888AA",
+          background:"rgba(0,0,0,0.25)",
+          border:"1.5px solid rgba(255,255,255,0.2)",
+          borderRadius:12,padding:"13px 18px",
+          color:"rgba(255,255,255,0.7)",
           fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer"
         }} onClick={onSkip}>Skip</button>
       </div>
@@ -1072,18 +1067,16 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
 
 // ─── GAME SCREEN ──────────────────────────────────────────────
 function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttempts, onResult, onSkip }) {
-  const [timeLeft,    setTimeLeft]    = useState(TIMER_DURATION);
-  const [phase,       setPhase]       = useState("playing");
-  const [result,      setResult]      = useState(null);
-  const [extended,    setExtended]    = useState(false);
-  const [videoReady,  setVideoReady]  = useState(false);
+  const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
+  const [phase,    setPhase]    = useState("playing");
+  const [result,   setResult]   = useState(null);
+  const [extended, setExtended] = useState(false);
   const maxTime = extended ? TIMER_DURATION + EXTEND_SECS : TIMER_DURATION;
 
-  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); setVideoReady(false); },[cara.id]);
+  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); },[cara.id]);
 
   useEffect(()=>{
     if (phase!=="playing") return;
-    if (!videoReady) return; // ← timer frozen until video ready
     if (timeLeft<=0) {
       SFX.timeUp();
       mp.track("timer_expired",{cara_id:cara.id});
@@ -1093,7 +1086,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
     if (timeLeft<=5) SFX.tick();
     const t=setTimeout(()=>setTimeLeft(s=>s-1),1000);
     return()=>clearTimeout(t);
-  },[timeLeft,phase,videoReady]);
+  },[timeLeft,phase]);
 
   function handleResult(res) { setResult({...res,extended}); setPhase("revealed"); }
 
@@ -1129,8 +1122,8 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         </div>
         {/* VIDEO + TIMER OVERLAY */}
         <div style={{position:"relative"}}>
-          <VideoBlock cara={cara} height="60vh" onReady={()=>setVideoReady(true)}/>
-          {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime} ready={videoReady}/>}
+          <VideoBlock cara={cara} height="60vh"/>
+          {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
           {phase==="playing"&&<BlurredCommentsScroll/>}
           {phase==="playing"&&<StatsSidebar cara={cara}/>}
           {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
