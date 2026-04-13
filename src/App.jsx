@@ -288,17 +288,13 @@ const G = `
   .vid-wrap video{width:100%;height:100%;object-fit:cover;display:block}
   .vid-wrap .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px;position:absolute;top:0;left:0}
   .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,rgba(18,18,32,1) 0%,transparent 100%);pointer-events:none}
-  .cat-badge{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;background:rgba(0,0,0,0.6)}
-  .hint-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff}
-  .mute-btn{position:absolute;bottom:14px;right:12px;z-index:5;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
-
-  /* ── VID-GAME CONTAINER ── */
-  .vid-game{position:relative;flex:1;overflow:hidden;background:#000}
-  .vid-game video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .cat-badge{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap;background:rgba(0,0,0,0.55)}
+  .hint-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
+  .mute-btn{position:absolute;bottom:14px;right:12px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px)}
 
   /* ── BIG TIMER ── */
   .timer-overlay{position:absolute;bottom:16px;left:14px;z-index:6;display:flex;align-items:center;gap:8px}
-  .timer-circle{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.02em;border:3px solid;transition:color .4s,border-color .4s,background .4s}
+  .timer-circle{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.02em;border:3px solid;backdrop-filter:blur(8px);transition:color .4s,border-color .4s,background .4s;box-shadow:0 4px 16px rgba(0,0,0,0.4)}
   .timer-circle.ok{color:#80DEEA;border-color:#80DEEA;background:rgba(10,10,15,0.6)}
   .timer-circle.warn{color:#FACC15;border-color:#FACC15;background:rgba(10,10,15,0.6)}
   .timer-circle.danger{color:#FF8A65;border-color:#FF8A65;background:rgba(10,10,15,0.75);animation:timerPulse .5s ease-in-out infinite}
@@ -341,7 +337,9 @@ const G = `
   .slot.correct{background:rgba(74,222,128,0.18);border-color:#4ADE80;color:#4ADE80}
   .slot.wrong{background:rgba(255,138,101,0.18);border-color:#FF8A65;color:#FF8A65;animation:shake .3s ease}
   .word-gap{width:10px}
-  @keyframes slotPop{0%{transform:scale(.75)}100%{transform:scale(1)}}
+  @keyframes slotPop{0%{transform:scale(.75);opacity:.5}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  @keyframes slotWrong{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+  @keyframes slotCorrect{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
 
   /* ── TILES (all uniform — no .dist differentiation) ── */
   .tiles-wrap{padding:4px 12px 8px;flex-shrink:0}
@@ -432,39 +430,31 @@ const G = `
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   @keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 `;
 
 // ─── VIDEO PRELOADER ─────────────────────────────────────────
 function VideoPreloader({ currentIndex }) {
-  const next = CARAS[currentIndex+1];
-  if (!next) return null;
+  // Preload next 2 videos silently in background
+  const toPreload = [1,2].map(i=>CARAS[currentIndex+i]).filter(Boolean);
   return (
     <div style={{display:"none"}} aria-hidden="true">
-      <video src={next.videoUrl} preload="auto" muted playsInline/>
+      {toPreload.map(c=>(
+        <video key={c.id} src={c.videoUrl} preload="auto" muted playsInline/>
+      ))}
     </div>
   );
 }
 
 // ─── VIDEO BLOCK ──────────────────────────────────────────────
-function VideoBlock({ cara, frozen=false, onReady }) {
-  const [muted,   setMuted]   = useState(true);
-  const [loading, setLoading] = useState(true);
+function VideoBlock({ cara, height="60vh", frozen=false }) {
+  const [muted, setMuted] = useState(true);
   const ref = useRef(null);
   const cc  = CAT_COLORS[cara.category]||"#80DEEA";
   const em  = CAT_EMOJI[cara.category]||"💎";
   useEffect(() => {
-    setLoading(true); setMuted(true);
-    if (!ref.current) return;
-    ref.current.muted = true;
-    const handleReady = () => { setLoading(false); onReady?.(); };
-    ref.current.addEventListener("canplay", handleReady, {once:true});
-    const fallback = setTimeout(()=>handleReady(), 4000);
-    ref.current.load();
-    ref.current.play().catch(()=>{});
-    if (frozen) ref.current.pause();
-    if (ref.current.readyState >= 3) { clearTimeout(fallback); handleReady(); }
-    return () => clearTimeout(fallback);
+    setMuted(true);
+    if (ref.current) { ref.current.muted=true; ref.current.play().catch(()=>{}); }
+    if (frozen&&ref.current) ref.current.pause();
   }, [cara.id, frozen]);
   function toggle() {
     SFX.init();
@@ -472,17 +462,11 @@ function VideoBlock({ cara, frozen=false, onReady }) {
     if (ref.current) ref.current.muted=n;
   }
   return (
-    <div style={{position:"absolute",inset:0}}>
-      {cara.videoUrl&&(
-        <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline preload="auto"
-          style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center center",display:"block"}}/>
-      )}
-      {loading&&(
-        <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#0D0D1A,#1A1030)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
-          <div style={{width:44,height:44,borderRadius:"50%",border:"3px solid rgba(128,222,234,0.2)",borderTopColor:"#80DEEA",animation:"spin .8s linear infinite"}}/>
-          <div style={{fontSize:11,color:"rgba(128,222,234,0.6)",letterSpacing:".1em",textTransform:"uppercase"}}>Loading…</div>
-        </div>
-      )}
+    <div className="vid-wrap" style={{height}}>
+      {cara.videoUrl
+        ? <video ref={ref} src={cara.videoUrl} autoPlay muted loop playsInline preload="auto" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center center"}}/>
+        : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
+      }
       <div className="vid-gradient"/>
       <div className="cat-badge" style={{background:cc,color:"#000",border:"none",fontSize:13,fontWeight:900,padding:"7px 14px",top:12,left:12}}>
         <span>{em}</span>
@@ -595,7 +579,7 @@ function BlurredCommentsScroll() {
       {visible.map((r,i)=>(
         <div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,opacity:i===0?0.35:i===1?0.55:0.7,transition:"opacity .4s"}}>
           <div style={{width:20,height:20,borderRadius:"50%",background:"rgba(255,255,255,0.18)",flexShrink:0}}/>
-          <div style={{height:9,borderRadius:5,background:"rgba(255,255,255,0.15)",width:r.w}}/>
+          <div style={{height:9,borderRadius:5,background:"rgba(255,255,255,0.18)",filter:"blur(5px)",width:r.w}}/>
         </div>
       ))}
       <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(128,222,234,0.85)",fontWeight:700,letterSpacing:".03em",marginTop:2}}>
@@ -810,11 +794,13 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
   );
 }
 
-// ─── HYBRID INPUT — overlay on video, floating tiles ──────────
+// ─── HYBRID INPUT — Draw Something style ──────────────────────
 function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) {
   const [value,    setValue]    = useState("");
   const [flash,    setFlash]    = useState(null);
   const [showHint, setShowHint] = useState(false);
+  const [kbHeight, setKbHeight] = useState(0);
+  const [lastLen,  setLastLen]  = useState(0);
   const inputRef = useRef(null);
 
   const isBrand    = !!cara.competitors;
@@ -823,11 +809,24 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
   const totalL     = answerClean.replace(/ /g,"").length;
   const cleanVal   = value.replace(/[^A-Za-z]/g,"").toUpperCase().slice(0, isBrand?12:totalL);
 
-  useEffect(()=>{ setValue(""); setFlash(null); setShowHint(false); },[cara.id]);
+  // visualViewport keyboard detection
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function onResize() { setKbHeight(Math.max(0, window.innerHeight - vv.height - vv.offsetTop)); }
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
+  }, []);
+
+  useEffect(()=>{ setValue(""); setFlash(null); setShowHint(false); setLastLen(0); },[cara.id]);
   useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
   useEffect(()=>{ setTimeout(()=>inputRef.current?.focus(),350); },[cara.id]);
 
-  // Auto-submit when all slots filled (non-brand only)
+  // Track last length for pop animation
+  useEffect(()=>{ setLastLen(cleanVal.length); },[cleanVal]);
+
+  // Auto-submit when all slots filled
   useEffect(()=>{
     if (!isBrand && cleanVal.length===totalL && cleanVal.length>0) {
       setTimeout(()=>checkGuess(cleanVal), 150);
@@ -848,23 +847,67 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
       setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess}),600);
     } else {
       SFX.wrong(); setFlash("wrong");
-      setTimeout(()=>{ setValue(""); setFlash(null); inputRef.current?.focus(); },700);
+      setTimeout(()=>{ setValue(""); setFlash(null); setLastLen(0); inputRef.current?.focus(); },700);
     }
   }
 
   function submit() { if (isBrand&&cleanVal.length>=2) checkGuess(cleanVal); }
 
-  // Build word slots from typed value
   let li=0;
   const wordSlots=words.map(w=>w.split("").map(()=>{ const l=cleanVal[li]||null; li++; return l; }));
 
+  // Tile style helper
+  function tileStyle(letter, isNext, absIdx) {
+    const justFilled = letter && absIdx === cleanVal.length - 1;
+    let borderColor, bg, color;
+    if (flash==="wrong") {
+      borderColor = letter ? "rgba(255,80,80,0.9)" : "rgba(255,80,80,0.3)";
+      bg = letter ? "rgba(255,80,80,0.2)" : "rgba(0,0,0,0.5)";
+      color = "#FF5050";
+    } else if (flash==="correct") {
+      borderColor = letter ? "rgba(74,222,128,0.95)" : "rgba(74,222,128,0.3)";
+      bg = letter ? "rgba(74,222,128,0.25)" : "rgba(0,0,0,0.5)";
+      color = "#4ADE80";
+    } else if (letter) {
+      borderColor = "rgba(255,255,255,0.85)";
+      bg = "rgba(20,20,35,0.75)";
+      color = "#fff";
+    } else if (isNext) {
+      borderColor = "rgba(128,222,234,0.8)";
+      bg = "rgba(128,222,234,0.08)";
+      color = "#80DEEA";
+    } else {
+      borderColor = "rgba(0,0,0,0.7)";
+      bg = "rgba(0,0,0,0.35)";
+      color = "rgba(255,255,255,0.2)";
+    }
+    return {
+      width:34, height:42, borderRadius:9,
+      border:`2.5px solid ${borderColor}`,
+      background:bg,
+      display:"flex",alignItems:"center",justifyContent:"center",
+      fontFamily:"'Bebas Neue',sans-serif", fontSize:20, fontWeight:700,
+      color, letterSpacing:".04em",
+      textShadow: letter?"0 1px 3px rgba(0,0,0,0.7)":"none",
+      animation: flash==="wrong"&&letter ? "slotWrong .35s ease"
+               : flash==="correct"&&letter ? "slotCorrect .3s ease"
+               : justFilled ? "slotPop .13s ease-out"
+               : undefined,
+      transition:"border-color .1s,background .1s",
+      boxShadow: isNext ? "0 0 0 3px rgba(128,222,234,0.2)" : "none",
+      cursor:"text",
+    };
+  }
+
   return (
     <div style={{
-      position:"absolute", bottom:0, left:0, right:0,
-      background:"rgba(0,0,0,0.15)",
-      borderTop:"1px solid rgba(255,255,255,0.06)",
-      padding:"10px 16px 14px",
-      zIndex:20,
+      position:"fixed", bottom:kbHeight, left:0, right:0,
+      maxWidth:420, margin:"0 auto",
+      background:"rgba(8,8,20,0.82)",
+      borderTop:"1px solid rgba(255,255,255,0.07)",
+      padding:"10px 16px 16px",
+      zIndex:50,
+      transition:"bottom .15s ease-out",
     }} onClick={()=>inputRef.current?.focus()}>
 
       {/* hidden native input */}
@@ -877,50 +920,48 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
         autoComplete="off" autoCorrect="off" autoCapitalize="characters" spellCheck={false}
       />
 
-      {showHint&&<div style={{marginBottom:8,padding:"6px 12px",background:"rgba(255,138,101,0.08)",border:"1px solid rgba(255,138,101,0.2)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>💡 {cara.hint}</div>}
+      {showHint&&<div style={{marginBottom:8,padding:"6px 12px",background:"rgba(255,138,101,0.1)",border:"1px solid rgba(255,138,101,0.3)",borderRadius:10,fontSize:12,color:"#FF8A65"}}>💡 {cara.hint}</div>}
 
       {/* attempt dots + label */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <div style={{fontSize:10,color:"#8888AA",textTransform:"uppercase",letterSpacing:".08em"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:".08em"}}>
           {attempts>0?`Attempt ${attempts+1} of ${MAX_ATTEMPTS}`:isBrand?"Tap to type a brand…":`${cara.wordCount===1?"1 word":`${cara.wordCount} words`}`}
         </div>
-        <div style={{display:"flex",gap:4}}>{Array.from({length:MAX_ATTEMPTS}).map((_,i)=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i<attempts?"#FF8A65":"rgba(255,255,255,0.12)"}}/>)}</div>
+        <div style={{display:"flex",gap:5}}>
+          {Array.from({length:MAX_ATTEMPTS}).map((_,i)=>(
+            <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<attempts?"#FF8A65":i===attempts?"rgba(128,222,234,0.6)":"rgba(255,255,255,0.12)",transition:"background .3s"}}/>
+          ))}
+        </div>
       </div>
 
-      {/* SLOTS (non-brand) or free bar (brand) */}
+      {/* SLOTS */}
       {!isBrand ? (
-        <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",marginBottom:10,cursor:"text"}} onClick={()=>inputRef.current?.focus()}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:12}} onClick={()=>inputRef.current?.focus()}>
           {wordSlots.map((w,wi)=>(
-            <div key={wi} style={{display:"flex",alignItems:"center",gap:4}}>
+            <div key={wi} style={{display:"flex",alignItems:"center",gap:5}}>
               {w.map((letter,li2)=>{
-                const isNext = !letter && cleanVal.length===wordSlots.slice(0,wi).reduce((a,x)=>a+x.length,0)+li2;
-                return (
-                  <div key={li2} style={{
-                    width:32, height:38, borderRadius:8,
-                    border:`2px solid ${flash==="wrong"&&letter?"rgba(255,138,101,0.8)":flash==="correct"&&letter?"rgba(74,222,128,0.8)":letter?"#80DEEA":isNext?"rgba(128,222,234,0.5)":"rgba(128,222,234,0.25)"}`,
-                    background:flash==="wrong"&&letter?"rgba(255,138,101,0.12)":flash==="correct"&&letter?"rgba(74,222,128,0.12)":letter?"rgba(128,222,234,0.1)":"rgba(128,222,234,0.03)",
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontFamily:"'Bebas Neue',sans-serif",fontSize:18,
-                    color:flash==="wrong"?"#FF8A65":flash==="correct"?"#4ADE80":"#fff",
-                    animation: letter&&!cleanVal[wordSlots.slice(0,wi).reduce((a,x)=>a+x.length,0)+li2-1]?"slotPop .12s ease-out":undefined,
-                    transition:"border-color .15s,background .15s"
-                  }}>{letter||""}</div>
-                );
+                const absIdx = wordSlots.slice(0,wi).reduce((a,x)=>a+x.length,0)+li2;
+                const isNext = !letter && cleanVal.length===absIdx;
+                return <div key={li2} style={tileStyle(letter,isNext,absIdx)}>{letter||""}</div>;
               })}
-              {wi<wordSlots.length-1&&<div style={{width:10}}/>}
+              {wi<wordSlots.length-1&&(
+                <div style={{width:8,height:4,borderRadius:2,background:"rgba(255,255,255,0.2)",margin:"0 2px"}}/>
+              )}
             </div>
           ))}
         </div>
       ) : (
         <div style={{
-          width:"100%", minHeight:50,
-          background:"rgba(255,255,255,0.06)",
-          border:`2px solid ${flash==="wrong"?"rgba(255,138,101,0.7)":flash==="correct"?"rgba(74,222,128,0.7)":"rgba(128,222,234,0.35)"}`,
-          borderRadius:14, padding:"12px 16px",
+          width:"100%", minHeight:52,
+          background:"rgba(20,20,35,0.8)",
+          border:`2.5px solid ${flash==="wrong"?"rgba(255,80,80,0.8)":flash==="correct"?"rgba(74,222,128,0.8)":"rgba(255,255,255,0.3)"}`,
+          borderRadius:14, padding:"13px 16px",
           fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:".08em",
-          color: cleanVal?"#fff":"rgba(255,255,255,0.25)",
-          cursor:"text", marginBottom:10,
-          animation:flash==="wrong"?"shake .3s ease":undefined
+          color: cleanVal?"#fff":"rgba(255,255,255,0.2)",
+          textShadow:"0 1px 3px rgba(0,0,0,0.6)",
+          cursor:"text", marginBottom:12,
+          animation:flash==="wrong"?"slotWrong .35s ease":undefined,
+          transition:"border-color .15s"
         }}>
           {cleanVal||"TYPE A BRAND…"}
         </div>
@@ -930,17 +971,22 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
       <div style={{display:"flex",gap:8}}>
         {isBrand&&(
           <button style={{
-            flex:1,background:"#80DEEA",color:"#0A0A0F",border:"none",
-            borderRadius:12,padding:13,fontFamily:"'Bebas Neue',sans-serif",
-            fontSize:18,letterSpacing:".06em",cursor:"pointer",
-            opacity:cleanVal.length>=2?1:0.4,transition:"opacity .2s"
-          }} onClick={submit}>✓ GUESS</button>
+            flex:1, background:cleanVal.length>=2?"#80DEEA":"rgba(128,222,234,0.3)",
+            color:"#0A0A0F", border:"none",
+            borderRadius:12, padding:13,
+            fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:".06em",
+            cursor:"pointer", transition:"background .2s,transform .1s",
+          }} onMouseDown={e=>e.currentTarget.style.transform="scale(.97)"}
+             onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
+             onClick={submit}>✓ GUESS</button>
         )}
         <button style={{
           flex:isBrand?0:1,
-          background:"transparent",border:"1.5px solid rgba(255,255,255,0.12)",
-          borderRadius:12,padding:"13px 18px",color:"#8888AA",
-          fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer"
+          background:"rgba(255,255,255,0.05)",
+          border:"1.5px solid rgba(255,255,255,0.15)",
+          borderRadius:12, padding:"13px 18px",
+          color:"rgba(255,255,255,0.5)",
+          fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer"
         }} onClick={onSkip}>Skip</button>
       </div>
     </div>
@@ -1055,18 +1101,16 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
 
 // ─── GAME SCREEN ──────────────────────────────────────────────
 function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttempts, onResult, onSkip }) {
-  const [timeLeft,   setTimeLeft]   = useState(TIMER_DURATION);
-  const [phase,      setPhase]      = useState("playing");
-  const [result,     setResult]     = useState(null);
-  const [extended,   setExtended]   = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
+  const [phase,    setPhase]    = useState("playing");
+  const [result,   setResult]   = useState(null);
+  const [extended, setExtended] = useState(false);
   const maxTime = extended ? TIMER_DURATION + EXTEND_SECS : TIMER_DURATION;
 
-  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); setVideoReady(false); },[cara.id]);
+  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); },[cara.id]);
 
   useEffect(()=>{
     if (phase!=="playing") return;
-    if (!videoReady) return; // freeze until video ready
     if (timeLeft<=0) {
       SFX.timeUp();
       mp.track("timer_expired",{cara_id:cara.id});
@@ -1076,7 +1120,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
     if (timeLeft<=5) SFX.tick();
     const t=setTimeout(()=>setTimeLeft(s=>s-1),1000);
     return()=>clearTimeout(t);
-  },[timeLeft,phase,videoReady]);
+  },[timeLeft,phase]);
 
   function handleResult(res) { setResult({...res,extended}); setPhase("revealed"); }
 
@@ -1096,7 +1140,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
   return (
     <div className="card">
 
-      {/* ══ TOP BAR + PROGRESS (fixed height) ══ */}
+      {/* ══ TOP — always visible ══ */}
       <div className="game-top">
         <div className="topbar">
           <div className="logo-s">CARAI<span>DIZ</span> 💎</div>
@@ -1110,35 +1154,34 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
           <div className="prog-track"><div className="prog-fill" style={{width:`${index/total*100}%`}}/></div>
           <div className="pips">{CARAS.map((_,i)=><div key={i} className="pip" style={{background:i<index?"#80DEEA":i===index?"rgba(128,222,234,0.4)":"rgba(255,255,255,0.08)"}}/>)}</div>
         </div>
-      </div>
-
-      {/* ══ VIDEO GAME CONTAINER — fills remaining height ══ */}
-      <div className="vid-game">
-        {/* VIDEO */}
-        <VideoBlock cara={cara} onReady={()=>setVideoReady(true)}/>
-
-        {/* OVERLAYS on video */}
-        {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime} ready={videoReady}/>}
-        {phase==="playing"&&<BlurredCommentsScroll/>}
-        {phase==="playing"&&<StatsSidebar cara={cara}/>}
-        {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
-
+        {/* VIDEO + TIMER OVERLAY */}
+        <div style={{position:"relative"}}>
+          <VideoBlock cara={cara} height="60vh"/>
+          {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
+          {phase==="playing"&&<BlurredCommentsScroll/>}
+          {phase==="playing"&&<StatsSidebar cara={cara}/>}
+          {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
+        </div>
+        {/* Preload next videos silently */}
+        <VideoPreloader currentIndex={index}/>
         {/* +15s BUTTON */}
         {showExtend&&(
-          <button className="extend-btn" style={{position:"absolute",bottom:120,left:16,right:16,width:"auto",zIndex:30}} onClick={handleExtend}>
+          <button className="extend-btn" onClick={handleExtend}>
             ⏱ +15 secondes
             <span style={{fontSize:11,opacity:.75,fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>(-{EXTEND_PENALTY} pts)</span>
           </button>
         )}
+      </div>
 
-        {/* PLAYING — input floats over lower video */}
+      {/* ══ SCROLL ZONE ══ */}
+      <div className="game-scroll" style={{paddingBottom:phase==="playing"?"130px":"0"}}>
         {phase==="playing"&&(
           <HybridInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
         )}
 
-        {/* REVEALED — scroll zone */}
+        {/* REVEALED */}
         {phase==="revealed"&&result&&(
-          <div style={{position:"absolute",bottom:0,left:0,right:0,background:"#121220",maxHeight:"45%",overflowY:"auto"}}>
+          <>
             {showScore&&(
               <div className="score-row">
                 <div className="sc"><div className="sc-n" style={{color:result.correct?"#4ADE80":"#FF8A65"}}>+{result.correct?scoreFor(result.attempts,streak,result.speedBonus,result.extended):0}</div><div className="sc-l">Points</div></div>
@@ -1146,22 +1189,21 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
                 <div className="sc"><div className="sc-n" style={{color:"#FF6B35"}}>{streak}</div><div className="sc-l">🔥 Streak</div></div>
               </div>
             )}
+
             {streak>=3&&(
               <div className="streak-banner">
                 <span style={{fontSize:22}}>🔥</span>
                 <div><div style={{fontWeight:800,fontSize:13}}>{streak} in a row!</div><div style={{fontSize:11,opacity:.85}}>Don't stop now</div></div>
               </div>
             )}
+
             <div className="next-wrap" style={{marginTop:8}}>
               <button className="next-btn" onClick={()=>onResult(result)}>{nextLabel}</button>
               {tease&&<div className="next-tease">{tease}</div>}
             </div>
-          </div>
+          </>
         )}
       </div>
-
-      {/* Preload next video */}
-      <VideoPreloader currentIndex={index}/>
     </div>
   );
 }
