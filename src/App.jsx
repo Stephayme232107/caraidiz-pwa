@@ -8,16 +8,31 @@ import { useState, useEffect, useRef } from "react";
 // ─── MIXPANEL ─────────────────────────────────────────────────
 const MIXPANEL_TOKEN = "2b1e84ea597387914b63c3662f751e5b";
 const mp = {
+  _queue: [],
+  _ready: false,
   init() {
     if (!MIXPANEL_TOKEN || MIXPANEL_TOKEN === "YOUR_TOKEN_HERE") return;
     const s = document.createElement("script");
     s.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
-    s.onload = () => window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: true });
+    s.onload = () => {
+      window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: true });
+      this._ready = true;
+      // Flush queued events
+      this._queue.forEach(([event, props]) => {
+        window.mixpanel.track(event, props);
+      });
+      this._queue = [];
+    };
     document.head.appendChild(s);
   },
   track(event, props = {}) {
-    if (typeof window.mixpanel === "undefined") return;
-    window.mixpanel.track(event, { ...props, app: "caraidiz", ts: new Date().toISOString() });
+    const payload = { ...props, app: "caraidiz", ts: new Date().toISOString() };
+    if (this._ready && typeof window.mixpanel !== "undefined") {
+      window.mixpanel.track(event, payload);
+    } else {
+      // Queue event until Mixpanel is ready
+      this._queue.push([event, payload]);
+    }
   }
 };
 
@@ -178,7 +193,7 @@ const TIKTOK_COMMENTS = {
 };
 
 const MAX_ATTEMPTS   = 3;
-const TIMER_DURATION = 30;
+const TIMER_DURATION = 45;
 const EXTEND_SECS    = 15;
 const EXTEND_PENALTY = 20;
 
@@ -1122,10 +1137,19 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   useEffect(()=>{
     const prev=loadJSON("crz_best",0);
     if(totalScore>prev){saveJSON("crz_best",totalScore);setIsNew(true);}
-    mp.track("session_complete",{total_score:totalScore,correct_count:correct,best_streak:bestStreak,time_spent_seconds:ts,accuracy_pct:pct});
+    // Save session locally immediately
     const s=loadJSON("crz_sessions",[]);
     s.push({date:new Date().toISOString(),score:totalScore,correct,streak:bestStreak,time:ts});
     saveJSON("crz_sessions",s.slice(-100));
+    // Delay Mixpanel track to ensure SDK is loaded
+    const trackComplete = () => {
+      mp.track("session_complete",{total_score:totalScore,correct_count:correct,best_streak:bestStreak,time_spent_seconds:ts,accuracy_pct:pct});
+    };
+    if (typeof window.mixpanel !== "undefined") {
+      trackComplete();
+    } else {
+      setTimeout(trackComplete, 1500);
+    }
   },[]);
   function share(){
     const link=`https://caracaraidiz.app/?c=${correct}-${CARAS.length}-${totalScore}`;
