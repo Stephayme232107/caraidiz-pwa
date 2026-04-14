@@ -824,9 +824,9 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
   useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
   useEffect(()=>{ setTimeout(()=>inputRef.current?.focus(),350); },[cara.id]);
 
-  // Auto-submit when last tile filled (non-brand only)
+  // Auto-submit when last tile filled (all types)
   useEffect(()=>{
-    if (!isBrand && typed.length===totalL && typed.length>0) {
+    if (typed.length===totalL && typed.length>0) {
       const t = setTimeout(()=>checkGuess(typed.join("")), 150);
       return ()=>clearTimeout(t);
     }
@@ -940,9 +940,8 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     });
     if (line.length>0) tileRows.push(line);
   } else {
-    // Brand: show typed.length + 1 active slot, min 4, max BRAND_MAX
-    const show = Math.min(Math.max(typed.length+1, totalL), BRAND_MAX);
-    tileRows.push(Array.from({length:show},(_,i)=>({idx:i,gap:false})));
+    // Brand: exact answer length, same as non-brand
+    tileRows.push(Array.from({length:totalL},(_,i)=>({idx:i,gap:false})));
   }
 
   return (
@@ -1013,22 +1012,8 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
 
       {/* Buttons */}
       <div style={{display:"flex",gap:8}}>
-        {isBrand&&(
-          <button style={{
-            flex:1,
-            background: typed.length>=2 ? "#80DEEA" : "rgba(128,222,234,0.2)",
-            color:"#0A0A0F", border:"none",
-            borderRadius:12, padding:13,
-            fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:".06em",
-            cursor: typed.length>=2 ? "pointer" : "default",
-            transition:"background .2s,transform .1s",
-          }}
-          onPointerDown={e=>{e.currentTarget.style.transform="scale(.97)"}}
-          onPointerUp={e=>{e.currentTarget.style.transform="scale(1)"}}
-          onClick={submit}>✓ GUESS</button>
-        )}
         <button style={{
-          flex: isBrand ? 0 : 1,
+          flex:1,
           background:"rgba(255,255,255,0.05)",
           border:"1.5px solid rgba(255,255,255,0.15)",
           borderRadius:12, padding:"13px 18px",
