@@ -1036,6 +1036,11 @@ function StartScreen({ onStart }) {
     const [fc,ft,fs]=challenge.split("-").map(Number);
     if(!isNaN(fc)&&!isNaN(ft)&&!isNaN(fs)) challenger={correct:fc,total:ft,score:fs};
   }
+  const steps=[
+    {emoji:"🎬", label:"Watch", desc:"Silent mime video"},
+    {emoji:"⌨️", label:"Guess", desc:"Type what you see"},
+    {emoji:"🏆", label:"Win",   desc:"Beat the clock"},
+  ];
   return (
     <div className="app" style={{justifyContent:"center",padding:"16px"}}>
       <div className="start-card">
@@ -1046,20 +1051,31 @@ function StartScreen({ onStart }) {
             <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontWeight:600}}>Beat {challenger.correct}/{challenger.total} to win 👊</div>
           </div>
         )}
-        <div className="start-bg" style={challenger?{borderRadius:0}:{}}>
+        <div className="start-bg" style={challenger?{borderRadius:0,aspectRatio:"unset",paddingTop:28,paddingBottom:24}:{}}>
           <div className="start-glow"/>
           <div className="start-gem">💎</div>
           <div className="start-logo">CARAIDIZ</div>
-          <div className="start-tag">watching becomes playing</div>
-          {!challenger&&<div className="start-badge">💎 {CARAS.length} Caras to beat</div>}
-          {!challenger&&<div className="start-count" style={{marginTop:6}}>Can you beat them all?</div>}
-          {!challenger&&best>0&&<div style={{marginTop:8,fontSize:11,color:"rgba(128,222,234,0.6)"}}>Your best: {best} pts</div>}
+          <div className="start-tag">The silent charades game</div>
+          <div style={{display:"flex",gap:12,marginTop:20,position:"relative",zIndex:1}}>
+            {steps.map((s,i)=>(
+              <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
+                <div style={{width:44,height:44,borderRadius:14,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{s.emoji}</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:".08em",color:"#fff"}}>{s.label}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",fontWeight:600,textAlign:"center",lineHeight:1.3}}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:16,position:"relative",zIndex:1,flexWrap:"wrap",justifyContent:"center"}}>
+            <div style={{background:"rgba(128,222,234,0.1)",border:"1px solid rgba(128,222,234,0.2)",borderRadius:20,padding:"4px 12px",fontSize:11,fontWeight:700,color:"#80DEEA",letterSpacing:".06em"}}>💎 {CARAS.length} rounds</div>
+            <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:"4px 12px",fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",letterSpacing:".06em"}}>⏱ ~3 min</div>
+            <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:"4px 12px",fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",letterSpacing:".06em"}}>🔓 No signup</div>
+          </div>
+          {best>0&&<div style={{marginTop:10,fontSize:11,color:"rgba(128,222,234,0.6)",position:"relative",zIndex:1}}>Your best: {best} pts — can you beat it?</div>}
         </div>
         <div className="start-body">
-          <button className="start-btn" onClick={onStart} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"START PLAYING →"}</button>
-          <div style={{textAlign:"center",fontSize:11,color:"#8888AA",marginTop:10}}>No signup · Free · ~3 min</div>
+          <button className="start-btn" onClick={onStart} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"PLAY NOW — IT'S FREE →"}</button>
+          <div style={{textAlign:"center",fontSize:11,color:"#8888AA",marginTop:8}}>Played by people in NY, Boston & London 🌍</div>
         </div>
-        {/* Preload first 3 videos */}
         <div style={{display:"none"}}>
           {CARAS.slice(0,3).map(c=><video key={c.id} src={c.videoUrl} preload="auto" muted playsInline/>)}
         </div>
@@ -1067,6 +1083,7 @@ function StartScreen({ onStart }) {
     </div>
   );
 }
+
 
 // ─── PAUSE ────────────────────────────────────────────────────
 function PauseScreen({ index, total, streak, correct, onNext }) {
