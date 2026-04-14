@@ -639,7 +639,7 @@ function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLef
   const [showHint, setShowHint] = useState(false);
 
   useEffect(()=>{ setTiles(buildBrandTiles(cara.competitors)); setSelected([]); setFlash(null); setShowHint(false); },[cara.id]);
-  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category}); } },[attempts]);
 
   function tap(tile) {
     if (tile.used||selected.length>=12) return; SFX.tap();
@@ -713,7 +713,7 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
   const [showHint, setShowHint] = useState(false);
 
   useEffect(()=>{ setTiles(cara.competitors?buildBrandTiles(cara.competitors):buildTiles(cara.answer)); setSelected([]); setSlotState(null); setShowHint(false); },[cara.id]);
-  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category}); } },[attempts]);
 
   function tap(tile) {
     if (tile.used||selected.length>=totalL) return; SFX.tap();
@@ -744,7 +744,7 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
     const speed=ok&&timeLeft>20;
     const na=attempts+1; setAttempts(na);
     setSlotState(ok?"correct":"wrong");
-    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
+    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft,difficulty:cara.difficulty,category:cara.category,answer_length:totalL,typed_length:guess.length});
     if (ok) {
       SFX.correct();
       setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:sel.map(s=>s.letter).join(""),acceptedAnswer:accepted}),500);
@@ -821,7 +821,7 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
   }, []);
 
   useEffect(()=>{ setTyped([]); setFlash(null); setPopping(null); setShowHint(false); },[cara.id]);
-  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1) setShowHint(true); },[attempts]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category}); } },[attempts]);
   useEffect(()=>{ setTimeout(()=>inputRef.current?.focus(),350); },[cara.id]);
 
   // Auto-submit when last tile filled (all types)
@@ -854,7 +854,7 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     const speed    = ok && timeLeft>20;
     const na       = attempts+1; setAttempts(na);
     setFlash(ok?"correct":"wrong");
-    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft});
+    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft,difficulty:cara.difficulty,category:cara.category,answer_length:totalL,typed_length:guess.length});
     if (ok) {
       SFX.correct();
       setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:guess,acceptedAnswer:accepted}),500);
@@ -1140,13 +1140,13 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
   const [extended, setExtended] = useState(false);
   const maxTime = extended ? TIMER_DURATION + EXTEND_SECS : TIMER_DURATION;
 
-  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); },[cara.id]);
+  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); mp.track("cara_started",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category,cara_index:index,total_caras:total}); },[cara.id]);
 
   useEffect(()=>{
     if (phase!=="playing") return;
     if (timeLeft<=0) {
       SFX.timeUp();
-      mp.track("timer_expired",{cara_id:cara.id});
+      mp.track("timer_expired",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category,extended:extended});
       const r={correct:false,attempts:attempts||1,speedBonus:false,timedOut:true,timeLeft:0,lastGuess:"",extended};
       setResult(r); setPhase("revealed"); return;
     }
@@ -1257,7 +1257,17 @@ export default function App() {
   const cara   = CARAS[index];
   const isLast = index===CARAS.length-1;
 
-  function start() { mp.track("session_start",{caras:CARAS.length}); setScreen("game"); }
+  function start() {
+    const sessionNum = loadJSON("crz_session_count", 0) + 1;
+    saveJSON("crz_session_count", sessionNum);
+    mp.track("session_start",{
+      caras: CARAS.length,
+      session_number: sessionNum,
+      is_returning_user: sessionNum > 1,
+      device: /iPhone|iPad/.test(navigator.userAgent) ? "ios" : /Android/.test(navigator.userAgent) ? "android" : "desktop",
+    });
+    setScreen("game");
+  }
 
   function handleResult(res) {
     const ns  = res.correct ? streak+1 : 0;
@@ -1265,7 +1275,7 @@ export default function App() {
     setStreak(ns); setBest(b=>Math.max(b,ns));
     setTotal(t=>t+pts);
     if (res.correct) setCorrect(c=>c+1);
-    mp.track("video_watched",{cara_id:cara.id,correct:res.correct,difficulty:cara.difficulty});
+    mp.track("video_watched",{cara_id:cara.id,correct:res.correct,difficulty:cara.difficulty,category:cara.category,attempts:res.attempts,time_left:res.timeLeft,speed_bonus:res.speedBonus,timed_out:res.timedOut||false});
     if (isLast) { setScreen("end"); return; }
     if ((index+1)%2===0) { setIndex(i=>i+1); setAttempts(0); setScreen("pause"); }
     else { setIndex(i=>i+1); setAttempts(0); }
@@ -1273,7 +1283,7 @@ export default function App() {
 
   function handleSkip() {
     setStreak(0);
-    mp.track("video_skipped",{cara_id:cara.id});
+    mp.track("video_skipped",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category,cara_index:index});
     handleResult({correct:false,attempts:0,speedBonus:false,timedOut:false,timeLeft:TIMER_DURATION,lastGuess:"",extended:false});
   }
 
