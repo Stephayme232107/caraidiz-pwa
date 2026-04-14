@@ -1037,8 +1037,8 @@ function StartScreen({ onStart }) {
     if(!isNaN(fc)&&!isNaN(ft)&&!isNaN(fs)) challenger={correct:fc,total:ft,score:fs};
   }
   const steps=[
-    {emoji:"🎬", label:"Watch", desc:"Silent mime video"},
-    {emoji:"⌨️", label:"Guess", desc:"Type what you see"},
+    {emoji:"🎬", label:"Watch", desc:"Short charade video"},
+    {emoji:"⌨️", label:"Guess", desc:"What it means"},
     {emoji:"🏆", label:"Win",   desc:"Beat the clock"},
   ];
   return (
@@ -1055,7 +1055,9 @@ function StartScreen({ onStart }) {
           <div className="start-glow"/>
           <div className="start-gem">💎</div>
           <div className="start-logo">CARAIDIZ</div>
-          <div className="start-tag">The silent charades game</div>
+          <div className="start-tag">The modern charades game</div>
+
+          {/* 3 steps */}
           <div style={{display:"flex",gap:12,marginTop:20,position:"relative",zIndex:1}}>
             {steps.map((s,i)=>(
               <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
@@ -1065,16 +1067,25 @@ function StartScreen({ onStart }) {
               </div>
             ))}
           </div>
+
+          {/* Session pills */}
           <div style={{display:"flex",gap:8,marginTop:16,position:"relative",zIndex:1,flexWrap:"wrap",justifyContent:"center"}}>
             <div style={{background:"rgba(128,222,234,0.1)",border:"1px solid rgba(128,222,234,0.2)",borderRadius:20,padding:"4px 12px",fontSize:11,fontWeight:700,color:"#80DEEA",letterSpacing:".06em"}}>💎 {CARAS.length} rounds</div>
             <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:"4px 12px",fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",letterSpacing:".06em"}}>⏱ ~3 min</div>
             <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:"4px 12px",fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",letterSpacing:".06em"}}>🔓 No signup</div>
           </div>
+
+          {/* Tension hook */}
+          <div style={{marginTop:14,padding:"8px 16px",background:"rgba(255,107,53,0.1)",border:"1px solid rgba(255,107,53,0.25)",borderRadius:12,position:"relative",zIndex:1}}>
+            <div style={{fontSize:12,fontWeight:800,color:"#FF8A65",letterSpacing:".04em",textAlign:"center"}}>Only 34% reach round 9 👀</div>
+          </div>
+
           {best>0&&<div style={{marginTop:10,fontSize:11,color:"rgba(128,222,234,0.6)",position:"relative",zIndex:1}}>Your best: {best} pts — can you beat it?</div>}
         </div>
+
         <div className="start-body">
-          <button className="start-btn" onClick={onStart} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"PLAY NOW — IT'S FREE →"}</button>
-          <div style={{textAlign:"center",fontSize:11,color:"#8888AA",marginTop:8}}>Played by people in NY, Boston & London 🌍</div>
+          <button className="start-btn" onClick={onStart} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"PLAY NOW — PROVE IT →"}</button>
+          <div style={{textAlign:"center",fontSize:11,color:"#FF8A65",marginTop:8,fontWeight:700}}>🔥 People are playing this right now</div>
         </div>
         <div style={{display:"none"}}>
           {CARAS.slice(0,3).map(c=><video key={c.id} src={c.videoUrl} preload="auto" muted playsInline/>)}
