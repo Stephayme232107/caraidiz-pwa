@@ -835,6 +835,7 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
   function addLetter(key) {
     if (typed.length>=maxLen || flash) return;
     SFX.tap();
+    if (typed.length===0) mp.track("typing_started",{cara_id:cara.id,category:cara.category,difficulty:cara.difficulty});
     const idx = typed.length;
     setTyped(prev=>[...prev, key]);
     setPopping(idx);
