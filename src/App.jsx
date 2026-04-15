@@ -506,6 +506,18 @@ function VideoBlock({ cara, height="60vh", frozen=false }) {
     if (ref.current) { ref.current.muted=true; ref.current.play().catch(()=>{}); }
     if (frozen&&ref.current) ref.current.pause();
   }, [cara.id, frozen]);
+  useEffect(() => {
+    if (frozen) return;
+    const t = setTimeout(() => {
+      mp.track("video_watched", {
+        cara_id:    cara.id,
+        cara_index: (cara._index||0) + 1,
+        category:   cara.category,
+        difficulty: cara.difficulty,
+      });
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [cara.id, frozen]);
   function toggle() {
     SFX.init();
     const n=!muted; setMuted(n); SFX._on=n; saveJSON("crz_sfx",n);
