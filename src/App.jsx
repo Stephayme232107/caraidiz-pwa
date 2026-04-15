@@ -340,7 +340,7 @@ const G = `
   .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.2) 40%,rgba(0,0,0,0) 100%);pointer-events:none}
   .cat-badge{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap;background:rgba(0,0,0,0.55)}
   .hint-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
-  .mute-btn{position:absolute;bottom:14px;right:12px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px)}
+  .mute-btn{position:absolute;bottom:32%;right:12px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px)}
 
   /* ── BIG TIMER ── */
   .timer-overlay{position:absolute;bottom:auto;top:58%;left:14px;z-index:6;display:flex;align-items:center;gap:8px}
@@ -530,7 +530,7 @@ function VideoBlock({ cara, height="60vh", frozen=false }) {
         : <div className="vid-ph"><span style={{fontSize:40,opacity:.12}}>🎬</span><span>Video loading...</span></div>
       }
       <div className="vid-gradient"/>
-      <div className="cat-badge" style={{background:cc,color:"#000",border:"none",fontSize:13,fontWeight:900,padding:"7px 14px",top:12,left:12}}>
+      <div className="cat-badge" style={{background:cc,color:"#000",border:"none",fontSize:13,fontWeight:900,padding:"7px 14px",top:72,left:12}}>
         <span>{em}</span>
         <span>{cara.category.toUpperCase()} · {cara.wordCount===1?"1 WORD":`${cara.wordCount} WORDS`}</span>
       </div>
