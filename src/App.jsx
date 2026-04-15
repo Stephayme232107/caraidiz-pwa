@@ -1549,7 +1549,7 @@ export default function App() {
     if (isLast) {
       const totalCorrect = correct + (res.correct?1:0);
       const ts = Math.round((Date.now() - sessionStart) / 1000);
-      mp.track("session_completed", {
+      mp.track("session_complete", {
         total_score:              newTotal,
         caras_completed:          CARAS.length,
         correct_count:            totalCorrect,
