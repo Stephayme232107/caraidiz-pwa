@@ -337,7 +337,7 @@ const G = `
   .vid-wrap{position:relative;overflow:hidden;background:#000}
   .vid-wrap video{width:100%;height:100%;object-fit:cover;display:block}
   .vid-wrap .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px;position:absolute;top:0;left:0}
-  .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,rgba(18,18,32,1) 0%,transparent 100%);pointer-events:none}
+  .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:18%;background:linear-gradient(to top,rgba(0,0,0,0.45) 0%,rgba(0,0,0,0) 100%);pointer-events:none}
   .cat-badge{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap;background:rgba(0,0,0,0.55)}
   .hint-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
   .mute-btn{position:absolute;bottom:14px;right:12px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px)}
@@ -362,7 +362,7 @@ const G = `
   .lock-label{font-size:10px;color:#8888AA;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
   .blur-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;opacity:0.6}
   .blur-avatar{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.07);flex-shrink:0}
-  .blur-line{height:10px;border-radius:5px;background:rgba(255,255,255,0.07);filter:blur(3px)}
+  .blur-line{height:10px;border-radius:5px;background:rgba(255,255,255,0.07)}
   .lock-cta{text-align:center;font-size:11px;color:rgba(128,222,234,0.7);font-weight:700;padding:2px 0 4px;letter-spacing:.03em}
 
   /* ── COMMENTS REVEALED ── */
@@ -451,7 +451,7 @@ const G = `
   .comments-overlay{position:absolute;bottom:48px;left:0;right:0;z-index:6;padding:8px 14px 6px;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%)}
   .cmt-ov-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
   .cmt-ov-avatar{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0}
-  .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18);filter:blur(4px)}
+  .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18)}
   .cmt-ov-lock{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(128,222,234,0.9);font-weight:700;letter-spacing:.04em;margin-top:2px}
 
   /* ── TIKTOK REVEAL OVERLAY ── */
@@ -613,28 +613,11 @@ function StatsSidebar({ cara }) {
 }
 
 // ─── BLURRED COMMENTS SCROLL (during gameplay) ───────────────
-const BLUR_ROWS = [
-  {w:"62%"},{w:"44%"},{w:"71%"},{w:"38%"},{w:"55%"},
-  {w:"48%"},{w:"66%"},{w:"41%"},{w:"58%"},{w:"35%"},
-];
 function BlurredCommentsScroll() {
-  const [offset, setOffset] = useState(0);
-  useEffect(() => {
-    const t = setInterval(()=>setOffset(o=>o+1), 1800);
-    return ()=>clearInterval(t);
-  }, []);
-  const visible = [0,1,2].map(i=>BLUR_ROWS[(offset+i)%BLUR_ROWS.length]);
   return (
-    <div style={{position:"absolute",bottom:48,left:0,right:0,zIndex:6,padding:"8px 14px 4px",background:"linear-gradient(to top,rgba(0,0,0,0.72) 0%,transparent 100%)"}}>
-      {visible.map((r,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,opacity:i===0?0.35:i===1?0.55:0.7,transition:"opacity .4s"}}>
-          <div style={{width:20,height:20,borderRadius:"50%",background:"rgba(255,255,255,0.18)",flexShrink:0}}/>
-          <div style={{height:9,borderRadius:5,background:"rgba(255,255,255,0.18)",filter:"blur(5px)",width:r.w}}/>
-        </div>
-      ))}
-      <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(128,222,234,0.85)",fontWeight:700,letterSpacing:".03em",marginTop:2}}>
-        <span>🔒</span><span>Guess to reveal what others said</span>
-      </div>
+    <div style={{position:"absolute",bottom:"5%",left:0,right:0,zIndex:6,display:"flex",alignItems:"center",justifyContent:"center",gap:5,pointerEvents:"none"}}>
+      <span style={{fontSize:10}}>🔒</span>
+      <span style={{fontSize:11,color:"rgba(255,255,255,0.92)",fontWeight:700,letterSpacing:".04em",textShadow:"0 1px 2px rgba(0,0,0,0.6)"}}>Guess to reveal comments</span>
     </div>
   );
 }
