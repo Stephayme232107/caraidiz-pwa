@@ -337,13 +337,13 @@ const G = `
   .vid-wrap{position:relative;overflow:hidden;background:#000}
   .vid-wrap video{width:100%;height:100%;object-fit:cover;display:block}
   .vid-wrap .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px;position:absolute;top:0;left:0}
-  .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,rgba(18,18,32,1) 0%,transparent 100%);pointer-events:none}
+  .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.2) 40%,rgba(0,0,0,0) 100%);pointer-events:none}
   .cat-badge{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap;background:rgba(0,0,0,0.55)}
   .hint-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
   .mute-btn{position:absolute;bottom:14px;right:12px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px)}
 
   /* ── BIG TIMER ── */
-  .timer-overlay{position:absolute;bottom:16px;left:14px;z-index:6;display:flex;align-items:center;gap:8px}
+  .timer-overlay{position:absolute;bottom:auto;top:58%;left:14px;z-index:6;display:flex;align-items:center;gap:8px}
   .timer-circle{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.02em;border:3px solid;backdrop-filter:blur(8px);transition:color .4s,border-color .4s,background .4s;box-shadow:0 4px 16px rgba(0,0,0,0.4)}
   .timer-circle.ok{color:#80DEEA;border-color:#80DEEA;background:rgba(10,10,15,0.6)}
   .timer-circle.warn{color:#FACC15;border-color:#FACC15;background:rgba(10,10,15,0.6)}
@@ -362,7 +362,7 @@ const G = `
   .lock-label{font-size:10px;color:#8888AA;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
   .blur-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;opacity:0.6}
   .blur-avatar{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.07);flex-shrink:0}
-  .blur-line{height:10px;border-radius:5px;background:rgba(255,255,255,0.07);filter:blur(3px)}
+  .blur-line{height:10px;border-radius:5px;background:rgba(255,255,255,0.07)}
   .lock-cta{text-align:center;font-size:11px;color:rgba(128,222,234,0.7);font-weight:700;padding:2px 0 4px;letter-spacing:.03em}
 
   /* ── COMMENTS REVEALED ── */
@@ -451,7 +451,7 @@ const G = `
   .comments-overlay{position:absolute;bottom:48px;left:0;right:0;z-index:6;padding:8px 14px 6px;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%)}
   .cmt-ov-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
   .cmt-ov-avatar{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0}
-  .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18);filter:blur(4px)}
+  .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18)}
   .cmt-ov-lock{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(128,222,234,0.9);font-weight:700;letter-spacing:.04em;margin-top:2px}
 
   /* ── TIKTOK REVEAL OVERLAY ── */
@@ -625,28 +625,11 @@ function StatsSidebar({ cara }) {
 }
 
 // ─── BLURRED COMMENTS SCROLL (during gameplay) ───────────────
-const BLUR_ROWS = [
-  {w:"62%"},{w:"44%"},{w:"71%"},{w:"38%"},{w:"55%"},
-  {w:"48%"},{w:"66%"},{w:"41%"},{w:"58%"},{w:"35%"},
-];
 function BlurredCommentsScroll() {
-  const [offset, setOffset] = useState(0);
-  useEffect(() => {
-    const t = setInterval(()=>setOffset(o=>o+1), 1800);
-    return ()=>clearInterval(t);
-  }, []);
-  const visible = [0,1,2].map(i=>BLUR_ROWS[(offset+i)%BLUR_ROWS.length]);
   return (
-    <div style={{position:"absolute",bottom:48,left:0,right:0,zIndex:6,padding:"8px 14px 4px",background:"linear-gradient(to top,rgba(0,0,0,0.72) 0%,transparent 100%)"}}>
-      {visible.map((r,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,opacity:i===0?0.35:i===1?0.55:0.7,transition:"opacity .4s"}}>
-          <div style={{width:20,height:20,borderRadius:"50%",background:"rgba(255,255,255,0.18)",flexShrink:0}}/>
-          <div style={{height:9,borderRadius:5,background:"rgba(255,255,255,0.18)",filter:"blur(5px)",width:r.w}}/>
-        </div>
-      ))}
-      <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(128,222,234,0.85)",fontWeight:700,letterSpacing:".03em",marginTop:2}}>
-        <span>🔒</span><span>Guess to reveal what others said</span>
-      </div>
+    <div style={{position:"absolute",bottom:"28%",left:0,right:0,zIndex:6,display:"flex",alignItems:"center",justifyContent:"center",gap:5,pointerEvents:"none"}}>
+      <span style={{fontSize:10}}>🔒</span>
+      <span style={{fontSize:11,color:"rgba(255,255,255,0.92)",fontWeight:700,letterSpacing:".04em",textShadow:"0 1px 2px rgba(0,0,0,0.6)"}}>Guess to reveal comments</span>
     </div>
   );
 }
@@ -1047,9 +1030,7 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     <div style={{
       position:"fixed", bottom:kbHeight, left:0, right:0,
       maxWidth:420, margin:"0 auto",
-      background:"rgba(0,0,0,0.5)",
-      borderTop:"1px solid rgba(255,255,255,0.08)",
-      backdropFilter:"blur(2px)", WebkitBackdropFilter:"blur(2px)",
+      background:"transparent",
       padding:"10px 16px 16px",
       zIndex:50,
       transition:"bottom .15s ease-out",
@@ -1441,64 +1422,67 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
   return (
     <div className="card">
 
-      {/* ══ TOP — always visible ══ */}
-      <div className="game-top">
-        <div className="topbar">
-          <div className="logo-s">CARAI<span>DIZ</span> 💎</div>
-          <div className="score-pill">
-            {streak>=2&&<span className="streak-n">🔥 {streak}</span>}
-            <span>{totalScore} pts</span>
+      {/* ══ FULLSCREEN VIDEO BASE ══ */}
+      <div style={{position:"relative", height:"100svh", overflow:"hidden"}}>
+        <VideoBlock cara={cara} height="100svh"/>
+
+        {/* TOPBAR — floating top gradient */}
+        <div style={{
+          position:"absolute", top:0, left:0, right:0, zIndex:20,
+          background:"linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)",
+          padding:"10px 16px 24px",
+        }}>
+          <div className="topbar" style={{padding:0, marginBottom:6}}>
+            <div className="logo-s">CARAI<span>DIZ</span> 💎</div>
+            <div className="score-pill">
+              {streak>=2&&<span className="streak-n">🔥 {streak}</span>}
+              <span>{totalScore} pts</span>
+            </div>
+          </div>
+          <div className="prog" style={{padding:0}}>
+            <div className="prog-lbl"><span>Cara {index+1} of {total}</span><span>{Math.round(index/total*100)}% done</span></div>
+            <div className="prog-track"><div className="prog-fill" style={{width:`${index/total*100}%`}}/></div>
+            <div className="pips">{CARAS.map((_,i)=><div key={i} className="pip" style={{background:i<index?"#80DEEA":i===index?"rgba(128,222,234,0.4)":"rgba(255,255,255,0.08)"}}/>)}</div>
           </div>
         </div>
-        <div className="prog">
-          <div className="prog-lbl"><span>Cara {index+1} of {total}</span><span>{Math.round(index/total*100)}% done</span></div>
-          <div className="prog-track"><div className="prog-fill" style={{width:`${index/total*100}%`}}/></div>
-          <div className="pips">{CARAS.map((_,i)=><div key={i} className="pip" style={{background:i<index?"#80DEEA":i===index?"rgba(128,222,234,0.4)":"rgba(255,255,255,0.08)"}}/>)}</div>
-        </div>
-        {/* VIDEO + TIMER OVERLAY */}
-        <div style={{position:"relative"}}>
-          <VideoBlock cara={cara} height="60vh"/>
-          {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
-          {phase==="playing"&&<BlurredCommentsScroll/>}
-          {phase==="playing"&&<StatsSidebar cara={cara}/>}
-          {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
-        </div>
-        {/* Preload next videos silently */}
-        <VideoPreloader currentIndex={index}/>
-        {/* +15s BUTTON */}
+
+        {/* FLOATING OVERLAYS */}
+        {phase==="playing"&&<TimerOverlay timeLeft={timeLeft} maxTime={maxTime}/>}
+        {phase==="playing"&&<BlurredCommentsScroll/>}
+        {phase==="playing"&&<StatsSidebar cara={cara}/>}
+        {phase==="revealed"&&result&&<TikTokReveal cara={cara} result={result}/>}
+
+        {/* +15s BUTTON — floating bottom */}
         {showExtend&&(
-          <button className="extend-btn" onClick={handleExtend}>
-            ⏱ +15 secondes
-            <span style={{fontSize:11,opacity:.75,fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>(-{EXTEND_PENALTY} pts)</span>
-          </button>
-        )}
-      </div>
-
-      {/* ══ SCROLL ZONE ══ */}
-      <div className="game-scroll" style={{paddingBottom:phase==="playing"?"130px":"0"}}>
-        {phase==="playing"&&(
-          <HybridInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
+          <div style={{position:"absolute", bottom:180, left:0, right:0, zIndex:30, padding:"0 16px"}}>
+            <button className="extend-btn" style={{margin:0,width:"100%"}} onClick={handleExtend}>
+              ⏱ +15 secondes
+              <span style={{fontSize:11,opacity:.75,fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>(-{EXTEND_PENALTY} pts)</span>
+            </button>
+          </div>
         )}
 
-        {/* REVEALED */}
+        {/* REVEALED bottom panel — floating */}
         {phase==="revealed"&&result&&(
-          <>
+          <div style={{
+            position:"absolute", bottom:0, left:0, right:0, zIndex:30,
+            background:"linear-gradient(to top, rgba(0,0,0,0.92) 60%, transparent 100%)",
+            padding:"40px 16px 32px",
+          }}>
             {showScore&&(
-              <div className="score-row">
+              <div className="score-row" style={{padding:0, marginBottom:8}}>
                 <div className="sc"><div className="sc-n" style={{color:result.correct?"#4ADE80":"#FF8A65"}}>+{result.correct?scoreFor(result.attempts,streak,result.speedBonus,result.extended):0}</div><div className="sc-l">Points</div></div>
                 <div className="sc"><div className="sc-n" style={{color:"#80DEEA"}}>{totalScore}</div><div className="sc-l">Total</div></div>
                 <div className="sc"><div className="sc-n" style={{color:"#FF6B35"}}>{streak}</div><div className="sc-l">🔥 Streak</div></div>
               </div>
             )}
-
             {streak>=3&&(
-              <div className="streak-banner">
+              <div className="streak-banner" style={{margin:"0 0 8px"}}>
                 <span style={{fontSize:22}}>🔥</span>
                 <div><div style={{fontWeight:800,fontSize:13}}>{streak} in a row!</div><div style={{fontSize:11,opacity:.85}}>Don't stop now</div></div>
               </div>
             )}
-
-            <div className="next-wrap" style={{marginTop:8}}>
+            <div className="next-wrap" style={{marginTop:8, padding:0}}>
               <button className="next-btn" onClick={()=>{
                 mp.track("next_challenge_clicked",{
                   ...caraProps(cara, index, totalScore, streak),
@@ -1509,9 +1493,17 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
               }}>{nextLabel}</button>
               {tease&&<div className="next-tease">{tease}</div>}
             </div>
-          </>
+          </div>
         )}
       </div>
+
+      {/* Preload next videos silently */}
+      <VideoPreloader currentIndex={index}/>
+
+      {/* INPUT — fixed overlay, transparent */}
+      {phase==="playing"&&(
+        <HybridInput cara={cara} onResult={handleResult} onSkip={onSkip} attempts={attempts} setAttempts={setAttempts} timeLeft={timeLeft}/>
+      )}
     </div>
   );
 }
