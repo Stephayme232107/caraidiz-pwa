@@ -7,39 +7,61 @@ import { useState, useEffect, useRef } from "react";
 
 // ─── MIXPANEL ─────────────────────────────────────────────────
 const MIXPANEL_TOKEN = "2b1e84ea597387914b63c3662f751e5b";
+
+// ── Anonymous user identity ───────────────────────────────────
+function _genId() { return Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+let _uid = (() => { try { let v=localStorage.getItem("crz_uid"); if(!v){v=_genId();localStorage.setItem("crz_uid",v);} return v; } catch { return _genId(); } })();
+let _sid = _genId();
+
+// ── Default properties on every event ────────────────────────
+function _defaults() {
+  const ua = navigator.userAgent;
+  const p  = new URLSearchParams(window.location.search);
+  return {
+    session_id:   _sid,
+    user_id:      _uid,
+    app:          "caraidiz",
+    ts:           new Date().toISOString(),
+    device_type:  /iPhone|iPad/.test(ua)?"ios":/Android/.test(ua)?"android":"desktop",
+    browser:      /Chrome/.test(ua)?"Chrome":/Safari/.test(ua)?"Safari":/Firefox/.test(ua)?"Firefox":"Other",
+    referrer:     document.referrer||"direct",
+    source:       p.get("utm_source")||"organic",
+    medium:       p.get("utm_medium")||"none",
+    campaign:     p.get("utm_campaign")||"none",
+    page_name:    "caraidiz_pwa",
+  };
+}
+
 const mp = {
-  _queue: [],
+  _q:     [],
   _ready: false,
   init() {
-    if (!MIXPANEL_TOKEN || MIXPANEL_TOKEN === "YOUR_TOKEN_HERE") return;
+    if (!MIXPANEL_TOKEN) return;
     const s = document.createElement("script");
     s.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
     s.onload = () => {
-      window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: true });
+      window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: false });
       this._ready = true;
-      // Flush queued events
-      this._queue.forEach(([event, props]) => {
-        window.mixpanel.track(event, props);
-      });
-      this._queue = [];
+      this._q.forEach(([ev,pr]) => window.mixpanel.track(ev, pr));
+      this._q = [];
     };
     document.head.appendChild(s);
   },
   track(event, props = {}) {
-    const payload = { ...props, app: "caraidiz", ts: new Date().toISOString() };
+    const payload = { ..._defaults(), ...props };
     if (this._ready && typeof window.mixpanel !== "undefined") {
       window.mixpanel.track(event, payload);
     } else {
-      // Queue event until Mixpanel is ready
-      this._queue.push([event, payload]);
+      this._q.push([event, payload]);
     }
-  }
+  },
+  newSession() { _sid = _genId(); },
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────
 const CDN      = "https://pub-cb42555aad7844b7ac02e5cf231188e1.r2.dev";
 const norm     = s => s.trim().toLowerCase().replace(/[^a-z0-9]/g,"");
-const saveJSON = (k,v) => localStorage.setItem(k,JSON.stringify(v));
+const saveJSON = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} };
 const loadJSON = (k,fb) => { try { return JSON.parse(localStorage.getItem(k))??fb; } catch { return fb; } };
 
 // ─── AUDIO + HAPTICS ──────────────────────────────────────────
@@ -132,6 +154,19 @@ const CARAS = [
   { id:8, category:"TV Show Character", answer:"Olivia Pope",         wordCount:2, difficulty:"expert", hint:"Scandal. Fixer extraordinaire. 👗",        videoUrl:`${CDN}/olivia-pope.mp4.mp4`, firstGuessRate:18, stats:{views:"3.4k",comments:"94"} },
   { id:9, category:"Bonus",             answer:"Coldplay Kiss Cam",   wordCount:3, difficulty:"expert", hint:"A stadium moment + British band 🎸",      videoUrl:`${CDN}/coldplay.mp4.mp4`,    firstGuessRate:22, stats:{views:"11.2k",comments:"412"} },
 ];
+
+// ─── TRACKING HELPERS ─────────────────────────────────────────
+function caraProps(cara, index, score=0, streak=0) {
+  return {
+    cara_index:    index + 1,
+    cara_id:       cara.id,
+    cara_type:     cara.category,
+    round_total:   CARAS.length,
+    current_score: score,
+    streak_count:  streak,
+    difficulty:    cara.difficulty,
+  };
+}
 
 // ─── TIKTOK COMMENTS ──────────────────────────────────────────
 const TIKTOK_COMMENTS = {
@@ -654,7 +689,7 @@ function BrandTileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLef
   const [showHint, setShowHint] = useState(false);
 
   useEffect(()=>{ setTiles(buildBrandTiles(cara.competitors)); setSelected([]); setFlash(null); setShowHint(false); },[cara.id]);
-  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category}); } },[attempts]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{...caraProps(cara, cara._index||0)}); } },[attempts]);
 
   function tap(tile) {
     if (tile.used||selected.length>=12) return; SFX.tap();
@@ -728,7 +763,7 @@ function TileInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }) 
   const [showHint, setShowHint] = useState(false);
 
   useEffect(()=>{ setTiles(cara.competitors?buildBrandTiles(cara.competitors):buildTiles(cara.answer)); setSelected([]); setSlotState(null); setShowHint(false); },[cara.id]);
-  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category}); } },[attempts]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{...caraProps(cara, cara._index||0)}); } },[attempts]);
 
   function tap(tile) {
     if (tile.used||selected.length>=totalL) return; SFX.tap();
@@ -836,7 +871,7 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
   }, []);
 
   useEffect(()=>{ setTyped([]); setFlash(null); setPopping(null); setShowHint(false); },[cara.id]);
-  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category}); } },[attempts]);
+  useEffect(()=>{ if(attempts>=MAX_ATTEMPTS-1){ setShowHint(true); mp.track("hint_shown",{...caraProps(cara, cara._index||0)}); } },[attempts]);
   useEffect(()=>{ setTimeout(()=>inputRef.current?.focus(),350); },[cara.id]);
 
   // Auto-submit when last tile filled (all types)
@@ -850,7 +885,13 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
   function addLetter(key) {
     if (typed.length>=maxLen || flash) return;
     SFX.tap();
-    if (typed.length===0) mp.track("typing_started",{cara_id:cara.id,category:cara.category,difficulty:cara.difficulty});
+    if (typed.length===0) {
+      mp.track("guess_input_started", {
+        ...caraProps(cara, cara._index||0),
+        input_mode: "keyboard",
+        time_from_cara_start_seconds: Math.round((Date.now() - (cara._startTs||Date.now())) / 1000),
+      });
+    }
     const idx = typed.length;
     setTyped(prev=>[...prev, key]);
     setPopping(idx);
@@ -868,15 +909,38 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     const accepted = ok ? (isBrand ? getAcceptedBrand(guess,cara) : cara.answer) : null;
     const speed    = ok && timeLeft>20;
     const na       = attempts+1; setAttempts(na);
+    const timeToGuess = Math.round((Date.now() - (cara._startTs||Date.now())) / 1000);
     setFlash(ok?"correct":"wrong");
-    mp.track("guess_submitted",{cara_id:cara.id,is_correct:ok,attempt_number:na,time_left:timeLeft,difficulty:cara.difficulty,category:cara.category,answer_length:totalL,typed_length:guess.length});
+
+    const baseGuessProps = {
+      ...caraProps(cara, cara._index||0),
+      input_mode:               "keyboard",
+      answer_length:            totalL,
+      submitted_length:         guess.length,
+      time_to_guess_seconds:    timeToGuess,
+      submitted_before_timeout: timeLeft > 0,
+      guess_text_normalized:    norm(guess),
+      is_correct:               ok,
+      attempt_number:           na,
+      time_left:                timeLeft,
+    };
+
+    mp.track("guess_submitted", baseGuessProps);
+
     if (ok) {
+      mp.track("guess_correct", {
+        ...baseGuessProps,
+        score_awarded: 0, // calculated in parent
+        streak_after:  0, // calculated in parent
+      });
       SFX.correct();
       setTimeout(()=>onResult({correct:true,attempts:na,speedBonus:speed,timeLeft,lastGuess:guess,acceptedAnswer:accepted}),500);
     } else if (na>=MAX_ATTEMPTS) {
+      mp.track("guess_wrong", baseGuessProps);
       SFX.wrong();
       setTimeout(()=>onResult({correct:false,attempts:na,speedBonus:false,timeLeft,lastGuess:guess}),600);
     } else {
+      mp.track("guess_wrong", baseGuessProps);
       SFX.wrong();
       setTimeout(()=>{ setTyped([]); setFlash(null); setPopping(null); inputRef.current?.focus(); },700);
     }
@@ -884,38 +948,42 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
 
   function submit() { if (typed.length>=2) checkGuess(typed.join("")); }
 
-  // ── Tile renderer ────────────────────────────────────────────
+  // ── Tile renderer — transparent border-only ─────────────────
   function renderTile(idx) {
     const isFilled = idx < typed.length;
     const isActive = idx === typed.length;
     const letter   = isFilled ? typed[idx] : "";
     const isPop    = popping===idx;
 
-    let bg, border, shadow="none", color="#fff", anim;
+    let bg, border, shadow="none", color, anim;
 
     if (flash==="wrong") {
-      bg     = isFilled ? "rgba(255,70,70,0.25)"  : "rgba(255,255,255,0.05)";
-      border = isFilled ? "rgba(255,70,70,0.9)"   : "rgba(255,70,70,0.28)";
-      color  = isFilled ? "#FF6060" : "rgba(255,255,255,0.2)";
-      anim   = isFilled ? "slotWrong .35s ease" : undefined;
+      bg     = "transparent";
+      border = isFilled ? "rgba(255,80,80,0.95)" : "rgba(255,80,80,0.35)";
+      color  = isFilled ? "#FF6060"              : "rgba(255,80,80,0.3)";
+      anim   = isFilled ? "slotWrong .35s ease"  : undefined;
     } else if (flash==="correct") {
-      bg     = isFilled ? "rgba(74,222,128,0.25)"  : "rgba(255,255,255,0.05)";
-      border = isFilled ? "rgba(74,222,128,0.9)"   : "rgba(74,222,128,0.25)";
-      color  = isFilled ? "#4ADE80" : "rgba(255,255,255,0.2)";
-      anim   = isFilled ? "slotCorrect .3s ease" : undefined;
+      bg     = "transparent";
+      border = isFilled ? "rgba(74,222,128,0.95)" : "rgba(74,222,128,0.3)";
+      color  = isFilled ? "#4ADE80"               : "rgba(74,222,128,0.25)";
+      anim   = isFilled ? "slotCorrect .3s ease"  : undefined;
     } else if (isFilled) {
-      bg     = "#2563EB";
-      border = "#2563EB";
-      shadow = "0 2px 12px rgba(37,99,235,0.55)";
+      // Filled: transparent + blue border + very subtle tint so letter pops
+      bg     = "rgba(37,99,235,0.1)";
+      border = "#3B82F6";
+      color  = "#fff";
       anim   = isPop ? "slotPop .13s ease-out" : undefined;
     } else if (isActive) {
-      bg     = "rgba(255,255,255,0.07)";
+      // Active: fully transparent + blue border + soft glow
+      bg     = "transparent";
       border = "#60A5FA";
-      shadow = "0 0 0 2px rgba(96,165,250,0.35)";
+      color  = "#fff";
+      shadow = "0 0 0 2px rgba(96,165,250,0.2)";
     } else {
-      bg     = "rgba(255,255,255,0.05)";
-      border = "rgba(255,255,255,0.2)";
-      color  = "rgba(255,255,255,0.15)";
+      // Empty: transparent + white border (readable on any bg)
+      bg     = "transparent";
+      border = "rgba(255,255,255,0.6)";
+      color  = "transparent";
     }
 
     return (
@@ -926,9 +994,12 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
         display:"flex", alignItems:"center", justifyContent:"center",
         fontFamily:"'Bebas Neue',sans-serif", fontSize:20, fontWeight:700,
         color, letterSpacing:".04em",
-        textShadow: isFilled ? "0 1px 3px rgba(0,0,0,0.5)" : "none",
+        // Strong text shadow so letters are always readable over video
+        textShadow: isFilled
+          ? "0 0 8px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.8)"
+          : "none",
         animation:anim,
-        transition:"border-color .12s,background .1s,box-shadow .12s",
+        transition:"border-color .12s, background .1s, box-shadow .12s",
         userSelect:"none", flexShrink:0,
       }}>
         {letter}
@@ -964,8 +1035,9 @@ function HybridInput({ cara, onResult, onSkip, attempts, setAttempts, timeLeft }
     <div style={{
       position:"fixed", bottom:kbHeight, left:0, right:0,
       maxWidth:420, margin:"0 auto",
-      background:"rgba(8,8,20,0.88)",
-      borderTop:"1px solid rgba(255,255,255,0.07)",
+      background:"rgba(0,0,0,0.5)",
+      borderTop:"1px solid rgba(255,255,255,0.08)",
+      backdropFilter:"blur(2px)", WebkitBackdropFilter:"blur(2px)",
       padding:"10px 16px 16px",
       zIndex:50,
       transition:"bottom .15s ease-out",
@@ -1051,6 +1123,21 @@ function StartScreen({ onStart }) {
     const [fc,ft,fs]=challenge.split("-").map(Number);
     if(!isNaN(fc)&&!isNaN(ft)&&!isNaN(fs)) challenger={correct:fc,total:ft,score:fs};
   }
+  useEffect(()=>{
+    mp.track("landing_page_viewed",{
+      hero_version:     challenger ? "challenge" : "default",
+      cta_text:         challenger ? "ACCEPT THE CHALLENGE →" : "PLAY NOW — PROVE IT →",
+      best_score_shown: best > 0,
+      has_challenger:   !!challenger,
+    });
+  },[]);
+  function handleStartClick() {
+    mp.track("start_playing_clicked",{
+      cta_text:     challenger ? "ACCEPT THE CHALLENGE →" : "PLAY NOW — PROVE IT →",
+      hero_version: challenger ? "challenge" : "default",
+    });
+    onStart();
+  }
   const steps=[
     {emoji:"🎬", label:"Watch", desc:"Short charade video"},
     {emoji:"⌨️", label:"Guess", desc:"What it means"},
@@ -1099,7 +1186,7 @@ function StartScreen({ onStart }) {
         </div>
 
         <div className="start-body">
-          <button className="start-btn" onClick={onStart} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"PLAY NOW — PROVE IT →"}</button>
+          <button className="start-btn" onClick={handleStartClick} style={challenger?{background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",boxShadow:"0 8px 32px rgba(255,107,53,0.4)"}:{}}>{challenger?"ACCEPT THE CHALLENGE →":"PLAY NOW — PROVE IT →"}</button>
           <div style={{textAlign:"center",fontSize:11,color:"#FF8A65",marginTop:8,fontWeight:700}}>🔥 People are playing this right now</div>
         </div>
         <div style={{display:"none"}}>
@@ -1137,26 +1224,47 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
   useEffect(()=>{
     const prev=loadJSON("crz_best",0);
     if(totalScore>prev){saveJSON("crz_best",totalScore);setIsNew(true);}
-    // Save session locally immediately
+    // Save locally
     const s=loadJSON("crz_sessions",[]);
     s.push({date:new Date().toISOString(),score:totalScore,correct,streak:bestStreak,time:ts});
     saveJSON("crz_sessions",s.slice(-100));
-    // Delay Mixpanel track to ensure SDK is loaded
-    const trackComplete = () => {
-      mp.track("session_complete",{total_score:totalScore,correct_count:correct,best_streak:bestStreak,time_spent_seconds:ts,accuracy_pct:pct});
-    };
-    if (typeof window.mixpanel !== "undefined") {
-      trackComplete();
-    } else {
-      setTimeout(trackComplete, 1500);
-    }
+    // Track — session_completed already fired in App root handleResult
+    // This is a backup track for the end screen itself
+    mp.track("end_screen_viewed",{
+      total_score:    totalScore,
+      accuracy_pct:   pct,
+      correct_count:  correct,
+      best_streak:    bestStreak,
+      time_spent_secs:ts,
+      is_new_best:    totalScore > prev,
+    });
   },[]);
   function share(){
     const link=`https://caracaraidiz.app/?c=${correct}-${CARAS.length}-${totalScore}`;
     const text=`I got ${correct}/${CARAS.length} on Caraidiz 💎 Think you can beat me?\n${link}`;
-    mp.track("score_shared",{correct,score:totalScore,streak:bestStreak});
-    if(navigator.share){ navigator.share({text}).catch(()=>{}); }
-    else { navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);}); }
+    mp.track("share_clicked",{
+      placement:       "end_screen",
+      score:           totalScore,
+      caras_completed: CARAS.length,
+      current_cara_index: CARAS.length,
+    });
+    if(navigator.share){
+      navigator.share({text})
+        .then(()=>{
+          mp.track("share_completed",{
+            placement: "end_screen",
+            score: totalScore,
+            caras_completed: CARAS.length,
+            current_cara_index: CARAS.length,
+          });
+        })
+        .catch(()=>{});
+    } else {
+      navigator.clipboard.writeText(text).then(()=>{
+        mp.track("share_completed",{placement:"end_screen",score:totalScore,caras_completed:CARAS.length,current_cara_index:CARAS.length});
+        setCopied(true); setTimeout(()=>setCopied(false),2500);
+      });
+    }
   }
   return (
     <div className="card">
@@ -1177,7 +1285,7 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
           {copied?"✓ LINK COPIED! 🔥":"🔥 CHALLENGE A FRIEND"}
         </button>
         <div style={{textAlign:"center",fontSize:12,color:"#8888AA",marginBottom:16}}>They won't beat your score 😏</div>
-        <button style={{width:"100%",background:"transparent",border:"1.5px solid rgba(255,255,255,0.12)",borderRadius:14,padding:13,color:"rgba(255,255,255,0.7)",fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:".06em",cursor:"pointer",marginBottom:8}} onClick={onReplay}>🔁 PLAY AGAIN</button>
+        <button style={{width:"100%",background:"transparent",border:"1.5px solid rgba(255,255,255,0.12)",borderRadius:14,padding:13,color:"rgba(255,255,255,0.7)",fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:".06em",cursor:"pointer",marginBottom:8}} onClick={()=>onReplay(totalScore)}>🔁 PLAY AGAIN</button>
         <div style={{textAlign:"center",fontSize:11,color:"#8888AA"}}>Most players don't improve their score 😈</div>
       </div>
     </div>
@@ -1192,13 +1300,42 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
   const [extended, setExtended] = useState(false);
   const maxTime = extended ? TIMER_DURATION + EXTEND_SECS : TIMER_DURATION;
 
-  useEffect(()=>{ setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false); mp.track("cara_started",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category,cara_index:index,total_caras:total}); },[cara.id]);
+  const caraStartTsRef = useRef(Date.now());
+  useEffect(()=>{
+    setTimeLeft(TIMER_DURATION); setPhase("playing"); setResult(null); setExtended(false);
+    caraStartTsRef.current = Date.now();
+    // Attach index and startTs to cara object for child components
+    cara._index   = index;
+    cara._startTs = caraStartTsRef.current;
+    mp.track("cara_started", {
+      ...caraProps(cara, index, totalScore, streak),
+      answer_length:   cara.answer.replace(/[^A-Za-z]/g,"").length,
+      has_timer:       true,
+      timer_seconds:   TIMER_DURATION,
+      difficulty_label: cara.difficulty,
+    });
+  },[cara.id]);
 
   useEffect(()=>{
     if (phase!=="playing") return;
     if (timeLeft<=0) {
       SFX.timeUp();
-      mp.track("timer_expired",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category,extended:extended});
+      const timeSpentSecs = Math.round((Date.now() - caraStartTsRef.current) / 1000);
+      mp.track("timer_expired", {
+        ...caraProps(cara, index, totalScore, streak),
+        had_partial_input:          attempts > 0,
+        input_length_before_timeout: 0,
+        extended,
+        time_spent_seconds: timeSpentSecs,
+      });
+      mp.track("cara_completed", {
+        ...caraProps(cara, index, totalScore, streak),
+        completion_type:    "timeout",
+        score_after:        totalScore,
+        streak_after:       0,
+        time_spent_seconds: timeSpentSecs,
+        guesses_count:      attempts,
+      });
       const r={correct:false,attempts:attempts||1,speedBonus:false,timedOut:true,timeLeft:0,lastGuess:"",extended};
       setResult(r); setPhase("revealed"); return;
     }
@@ -1207,7 +1344,26 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
     return()=>clearTimeout(t);
   },[timeLeft,phase]);
 
-  function handleResult(res) { setResult({...res,extended}); setPhase("revealed"); }
+  function handleResult(res) {
+    const timeSpentSecs = Math.round((Date.now() - caraStartTsRef.current) / 1000);
+    const completionType = res.timedOut ? "timeout" : res.correct ? "correct" : attempts >= MAX_ATTEMPTS ? "wrong" : "skipped";
+    const newStreak = res.correct ? streak + 1 : 0;
+    mp.track("cara_completed", {
+      ...caraProps(cara, index, totalScore, streak),
+      completion_type:    completionType,
+      score_after:        totalScore,
+      streak_after:       newStreak,
+      time_spent_seconds: timeSpentSecs,
+      guesses_count:      res.attempts || 0,
+    });
+    mp.track("result_screen_viewed", {
+      ...caraProps(cara, index, totalScore, streak),
+      completion_type: completionType,
+      score_after:     totalScore,
+      streak_after:    newStreak,
+    });
+    setResult({...res,extended}); setPhase("revealed");
+  }
 
   function handleExtend() {
     mp.track("timer_extended",{cara_id:cara.id,time_left:timeLeft});
@@ -1283,7 +1439,14 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
             )}
 
             <div className="next-wrap" style={{marginTop:8}}>
-              <button className="next-btn" onClick={()=>onResult(result)}>{nextLabel}</button>
+              <button className="next-btn" onClick={()=>{
+                mp.track("next_challenge_clicked",{
+                  ...caraProps(cara, index, totalScore, streak),
+                  completion_type: result?.timedOut?"timeout":result?.correct?"correct":"wrong",
+                  score_after: totalScore,
+                });
+                onResult(result);
+              }}>{nextLabel}</button>
               {tease&&<div className="next-tease">{tease}</div>}
             </div>
           </>
@@ -1310,13 +1473,16 @@ export default function App() {
   const isLast = index===CARAS.length-1;
 
   function start() {
+    mp.newSession(); // new session_id for each play
     const sessionNum = loadJSON("crz_session_count", 0) + 1;
     saveJSON("crz_session_count", sessionNum);
-    mp.track("session_start",{
-      caras: CARAS.length,
-      session_number: sessionNum,
+    const params = new URLSearchParams(window.location.search);
+    const hasChallenge = !!params.get("c");
+    mp.track("session_started", {
+      round_total:       CARAS.length,
+      session_number:    sessionNum,
       is_returning_user: sessionNum > 1,
-      device: /iPhone|iPad/.test(navigator.userAgent) ? "ios" : /Android/.test(navigator.userAgent) ? "android" : "desktop",
+      entry_point:       hasChallenge ? "shared_link" : sessionNum > 1 ? "replay" : "landing",
     });
     setScreen("game");
   }
@@ -1324,22 +1490,45 @@ export default function App() {
   function handleResult(res) {
     const ns  = res.correct ? streak+1 : 0;
     const pts = res.correct ? scoreFor(res.attempts,ns,res.speedBonus,res.extended) : 0;
+    const newTotal = total + pts;
     setStreak(ns); setBest(b=>Math.max(b,ns));
     setTotal(t=>t+pts);
     if (res.correct) setCorrect(c=>c+1);
-    mp.track("video_watched",{cara_id:cara.id,correct:res.correct,difficulty:cara.difficulty,category:cara.category,attempts:res.attempts,time_left:res.timeLeft,speed_bonus:res.speedBonus,timed_out:res.timedOut||false});
-    if (isLast) { setScreen("end"); return; }
+    if (isLast) {
+      const totalCorrect = correct + (res.correct?1:0);
+      const ts = Math.round((Date.now() - sessionStart) / 1000);
+      mp.track("session_completed", {
+        total_score:              newTotal,
+        caras_completed:          CARAS.length,
+        correct_count:            totalCorrect,
+        wrong_count:              CARAS.length - totalCorrect,
+        timeout_count:            0,
+        final_streak:             ns,
+        session_duration_seconds: ts,
+      });
+      setScreen("end");
+      return;
+    }
     if ((index+1)%2===0) { setIndex(i=>i+1); setAttempts(0); setScreen("pause"); }
     else { setIndex(i=>i+1); setAttempts(0); }
   }
 
   function handleSkip() {
     setStreak(0);
-    mp.track("video_skipped",{cara_id:cara.id,difficulty:cara.difficulty,category:cara.category,cara_index:index});
+    mp.track("guess_skipped", {
+      ...caraProps(cara, index, total, streak),
+      time_from_cara_start_seconds: 0,
+    });
     handleResult({correct:false,attempts:0,speedBonus:false,timedOut:false,timeLeft:TIMER_DURATION,lastGuess:"",extended:false});
   }
 
-  function handleReplay() { setIndex(0); setScreen("start"); setAttempts(0); setTotal(0); setStreak(0); setCorrect(0); }
+  function handleReplay(prevScore) {
+    mp.track("replay_clicked", {
+      previous_score:             prevScore || total,
+      previous_completion_status: "completed",
+    });
+    setIndex(0); setScreen("start"); setAttempts(0); setTotal(0); setStreak(0); setCorrect(0);
+  }
 
   if (screen==="start") return <><style>{G}</style><StartScreen onStart={start}/></>;
   if (screen==="pause") return <><style>{G}</style><PauseScreen index={index} total={CARAS.length} streak={streak} correct={correct} onNext={()=>setScreen("game")}/></>;
