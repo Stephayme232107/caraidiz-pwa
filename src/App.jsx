@@ -337,7 +337,7 @@ const G = `
   .vid-wrap{position:relative;overflow:hidden;background:#000}
   .vid-wrap video{width:100%;height:100%;object-fit:cover;display:block}
   .vid-wrap .vid-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8888AA;font-size:11px;position:absolute;top:0;left:0}
-  .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:18%;background:linear-gradient(to top,rgba(0,0,0,0.45) 0%,rgba(0,0,0,0) 100%);pointer-events:none}
+  .vid-gradient{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,rgba(18,18,32,1) 0%,transparent 100%);pointer-events:none}
   .cat-badge{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap;background:rgba(0,0,0,0.55)}
   .hint-badge{position:absolute;top:10px;right:10px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
   .mute-btn{position:absolute;bottom:14px;right:12px;z-index:5;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;backdrop-filter:blur(4px)}
@@ -362,7 +362,7 @@ const G = `
   .lock-label{font-size:10px;color:#8888AA;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
   .blur-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;opacity:0.6}
   .blur-avatar{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.07);flex-shrink:0}
-  .blur-line{height:10px;border-radius:5px;background:rgba(255,255,255,0.07)}
+  .blur-line{height:10px;border-radius:5px;background:rgba(255,255,255,0.07);filter:blur(3px)}
   .lock-cta{text-align:center;font-size:11px;color:rgba(128,222,234,0.7);font-weight:700;padding:2px 0 4px;letter-spacing:.03em}
 
   /* ── COMMENTS REVEALED ── */
@@ -451,7 +451,7 @@ const G = `
   .comments-overlay{position:absolute;bottom:48px;left:0;right:0;z-index:6;padding:8px 14px 6px;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%)}
   .cmt-ov-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
   .cmt-ov-avatar{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0}
-  .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18)}
+  .cmt-ov-line{height:9px;border-radius:5px;background:rgba(255,255,255,0.18);filter:blur(4px)}
   .cmt-ov-lock{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(128,222,234,0.9);font-weight:700;letter-spacing:.04em;margin-top:2px}
 
   /* ── TIKTOK REVEAL OVERLAY ── */
@@ -613,11 +613,28 @@ function StatsSidebar({ cara }) {
 }
 
 // ─── BLURRED COMMENTS SCROLL (during gameplay) ───────────────
+const BLUR_ROWS = [
+  {w:"62%"},{w:"44%"},{w:"71%"},{w:"38%"},{w:"55%"},
+  {w:"48%"},{w:"66%"},{w:"41%"},{w:"58%"},{w:"35%"},
+];
 function BlurredCommentsScroll() {
+  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    const t = setInterval(()=>setOffset(o=>o+1), 1800);
+    return ()=>clearInterval(t);
+  }, []);
+  const visible = [0,1,2].map(i=>BLUR_ROWS[(offset+i)%BLUR_ROWS.length]);
   return (
-    <div style={{position:"absolute",bottom:"5%",left:0,right:0,zIndex:6,display:"flex",alignItems:"center",justifyContent:"center",gap:5,pointerEvents:"none"}}>
-      <span style={{fontSize:10}}>🔒</span>
-      <span style={{fontSize:11,color:"rgba(255,255,255,0.92)",fontWeight:700,letterSpacing:".04em",textShadow:"0 1px 2px rgba(0,0,0,0.6)"}}>Guess to reveal comments</span>
+    <div style={{position:"absolute",bottom:48,left:0,right:0,zIndex:6,padding:"8px 14px 4px",background:"linear-gradient(to top,rgba(0,0,0,0.72) 0%,transparent 100%)"}}>
+      {visible.map((r,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,opacity:i===0?0.35:i===1?0.55:0.7,transition:"opacity .4s"}}>
+          <div style={{width:20,height:20,borderRadius:"50%",background:"rgba(255,255,255,0.18)",flexShrink:0}}/>
+          <div style={{height:9,borderRadius:5,background:"rgba(255,255,255,0.18)",filter:"blur(5px)",width:r.w}}/>
+        </div>
+      ))}
+      <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(128,222,234,0.85)",fontWeight:700,letterSpacing:".03em",marginTop:2}}>
+        <span>🔒</span><span>Guess to reveal what others said</span>
+      </div>
     </div>
   );
 }
@@ -1199,77 +1216,125 @@ function PauseScreen({ index, total, streak, correct, onNext }) {
 
 // ─── END ──────────────────────────────────────────────────────
 function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) {
-  const [copied,setCopied]=useState(false);
-  const [isNew,setIsNew]=useState(false);
-  const pct=Math.round(correct/CARAS.length*100);
-  const ts=Math.round((Date.now()-sessionStart)/1000);
-  const ego=pct===100?"Less than 5% get a perfect score.":pct>=80?"Better than 80% of players.":pct>=60?"Most players don't make it this far.":bestStreak>=3?`That ${bestStreak}-streak though 🔥`:"Each play makes you sharper.";
-  useEffect(()=>{
-    const prev=loadJSON("crz_best",0);
-    if(totalScore>prev){saveJSON("crz_best",totalScore);setIsNew(true);}
-    // Save locally
-    const s=loadJSON("crz_sessions",[]);
-    s.push({date:new Date().toISOString(),score:totalScore,correct,streak:bestStreak,time:ts});
-    saveJSON("crz_sessions",s.slice(-100));
-    // Track — session_completed already fired in App root handleResult
-    // This is a backup track for the end screen itself
-    mp.track("end_screen_viewed",{
-      total_score:    totalScore,
-      accuracy_pct:   pct,
-      correct_count:  correct,
-      best_streak:    bestStreak,
-      time_spent_secs:ts,
-      is_new_best:    totalScore > prev,
+  const [copied, setCopied] = useState(false);
+  const [isNew,  setIsNew]  = useState(false);
+  const total = CARAS.length;
+  const pct   = Math.round(correct / total * 100);
+  const ts    = Math.round((Date.now() - sessionStart) / 1000);
+
+  // ── Dynamic content based on score ──────────────────────────
+  const isZero    = correct === 0;
+  const isMid     = correct >= 1 && correct <= 6;
+  const isHigh    = correct >= 7;
+  const isPerfect = correct === total;
+
+  const HEADLINES = {
+    zero:    ["That was brutal 😅", "Harder than it looks"],
+    mid:     ["Not bad 👀",         "You can do better"],
+    high:    ["Almost perfect 😤",  "That's strong"],
+    perfect: ["Perfect run 👑",     "Untouchable 💎"],
+  };
+  const headlinePool = isPerfect ? HEADLINES.perfect : isHigh ? HEADLINES.high : isMid ? HEADLINES.mid : HEADLINES.zero;
+  const headline     = headlinePool[Math.floor(Math.random() * headlinePool.length)];
+
+  const shareMsg = isZero
+    ? `I tried Caraidiz 💎 — it's harder than it looks. Can you do better?\nhttps://caracaraidiz.app/?c=${correct}-${total}-${totalScore}`
+    : isHigh
+    ? `I got ${correct}/${total} on Caraidiz 😤 beat that.\nhttps://caracaraidiz.app/?c=${correct}-${total}-${totalScore}`
+    : `I got ${correct}/${total} on Caraidiz 💎 — can you beat me?\nhttps://caracaraidiz.app/?c=${correct}-${total}-${totalScore}`;
+
+  const dynamicMsg = isZero
+    ? "Try this — it's harder than you think"
+    : isHigh
+    ? `I got ${correct}/${total} 😤 beat that`
+    : `I got ${correct}/${total} — can you beat me?`;
+
+  const trophy = isPerfect ? "👑" : isHigh ? "🏆" : isMid ? "⭐" : "💎";
+
+  const socialProof = correct <= 5
+    ? "Most players don't get past 5 👀"
+    : "Only 5% finish this 💎";
+
+  useEffect(() => {
+    const prev = loadJSON("crz_best", 0);
+    if (totalScore > prev) { saveJSON("crz_best", totalScore); setIsNew(true); }
+    const s = loadJSON("crz_sessions", []);
+    s.push({ date: new Date().toISOString(), score: totalScore, correct, streak: bestStreak, time: ts });
+    saveJSON("crz_sessions", s.slice(-100));
+    mp.track("end_screen_viewed", {
+      total_score:     totalScore,
+      accuracy_pct:    pct,
+      correct_count:   correct,
+      best_streak:     bestStreak,
+      time_spent_secs: ts,
+      is_new_best:     totalScore > prev,
+      score_tier:      isZero ? "zero" : isHigh ? "high" : "mid",
     });
-  },[]);
-  function share(){
-    const link=`https://caracaraidiz.app/?c=${correct}-${CARAS.length}-${totalScore}`;
-    const text=`I got ${correct}/${CARAS.length} on Caraidiz 💎 Think you can beat me?\n${link}`;
-    mp.track("share_clicked",{
-      placement:       "end_screen",
-      score:           totalScore,
-      caras_completed: CARAS.length,
-      current_cara_index: CARAS.length,
-    });
-    if(navigator.share){
-      navigator.share({text})
-        .then(()=>{
-          mp.track("share_completed",{
-            placement: "end_screen",
-            score: totalScore,
-            caras_completed: CARAS.length,
-            current_cara_index: CARAS.length,
-          });
-        })
-        .catch(()=>{});
+  }, []);
+
+  function share() {
+    mp.track("share_clicked", { placement: "end_screen", score: totalScore, correct_count: correct });
+    if (navigator.share) {
+      navigator.share({ text: shareMsg })
+        .then(() => mp.track("share_completed", { placement: "end_screen", score: totalScore }))
+        .catch(() => {});
     } else {
-      navigator.clipboard.writeText(text).then(()=>{
-        mp.track("share_completed",{placement:"end_screen",score:totalScore,caras_completed:CARAS.length,current_cara_index:CARAS.length});
-        setCopied(true); setTimeout(()=>setCopied(false),2500);
+      navigator.clipboard.writeText(shareMsg).then(() => {
+        mp.track("share_completed", { placement: "end_screen", score: totalScore });
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
       });
     }
   }
+
   return (
     <div className="card">
       <div className="end-screen">
-        <div className="etrophy">{pct===100?"👑":pct>=80?"🏆":pct>=60?"⭐":"💎"}</div>
-        <div className="etitle">YOU FINISHED 🔥</div>
-        <div className="erank">{pct===100?"PERFECT 👑":pct>=80?"TOP PLAYER 🏆":pct>=60?"WELL PLAYED ⭐":"KEEP GOING 💪"}</div>
-        {isNew&&<div style={{background:"rgba(250,204,21,0.1)",border:"1px solid rgba(250,204,21,0.3)",borderRadius:12,padding:"9px 14px",textAlign:"center",fontSize:13,color:"#FACC15",fontWeight:800,marginBottom:12}}>🏆 New personal best!</div>}
-        <div className="egrid" style={{marginBottom:10}}>
+
+        {/* Logo */}
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".14em",color:"rgba(255,255,255,0.35)",marginBottom:16}}>CARAIDIZ 💎</div>
+
+        {/* Trophy + Dynamic headline */}
+        <div style={{fontSize:48,marginBottom:8,animation:"float 3s ease-in-out infinite"}}>{trophy}</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:34,letterSpacing:".06em",color:"#fff",textAlign:"center",lineHeight:1.1,marginBottom:6,padding:"0 16px"}}>{headline}</div>
+
+        {/* New best badge */}
+        {isNew && (
+          <div style={{background:"rgba(250,204,21,0.1)",border:"1px solid rgba(250,204,21,0.3)",borderRadius:20,padding:"5px 14px",fontSize:12,color:"#FACC15",fontWeight:800,letterSpacing:".06em",marginBottom:12}}>🏆 NEW PERSONAL BEST</div>
+        )}
+
+        {/* Score block */}
+        <div className="egrid" style={{width:"100%",marginBottom:8}}>
           <div className="ebox"><div className="en" style={{color:"#80DEEA"}}>{totalScore}</div><div className="el">pts</div></div>
-          <div className="ebox"><div className="en" style={{color:"#4ADE80"}}>{correct}/{CARAS.length}</div><div className="el">correct</div></div>
+          <div className="ebox"><div className="en" style={{color:"#4ADE80"}}>{correct}/{total}</div><div className="el">correct</div></div>
           <div className="ebox"><div className="en" style={{color:"#FF6B35"}}>🔥{bestStreak}</div><div className="el">streak</div></div>
         </div>
-        <div style={{fontSize:13,color:"#8888AA",textAlign:"center",marginBottom:12}}>{ego}</div>
-        <div style={{fontSize:12,fontWeight:800,color:"#80DEEA",letterSpacing:".1em",textTransform:"uppercase",marginBottom:8,textShadow:"0 0 20px rgba(128,222,234,0.4)"}}>ONLY 5% FINISH THIS 💎</div>
-        <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:10}}>I got {correct}/{CARAS.length} — can you beat me?</div>
-        <button style={{width:"100%",background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",border:"none",borderRadius:16,padding:"17px 16px",fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".08em",cursor:"pointer",marginBottom:7,boxShadow:"0 8px 32px rgba(255,107,53,0.4)",animation:"pulseCTA 1.8s ease-in-out infinite"}} onClick={share}>
-          {copied?"✓ LINK COPIED! 🔥":"🔥 CHALLENGE A FRIEND"}
+
+        {/* Social proof */}
+        <div style={{fontSize:12,fontWeight:800,color:"#80DEEA",letterSpacing:".08em",textTransform:"uppercase",textAlign:"center",marginBottom:12,textShadow:"0 0 20px rgba(128,222,234,0.3)"}}>{socialProof}</div>
+
+        {/* Dynamic share message */}
+        <div style={{fontSize:15,fontWeight:700,color:"#fff",textAlign:"center",marginBottom:16,padding:"0 8px"}}>{dynamicMsg}</div>
+
+        {/* PRIMARY CTA — Share */}
+        <button
+          style={{width:"100%",background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",border:"none",borderRadius:16,padding:"18px 16px",fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".08em",cursor:"pointer",marginBottom:6,boxShadow:"0 8px 32px rgba(255,107,53,0.4)",animation:"pulseCTA 1.8s ease-in-out infinite"}}
+          onClick={share}
+        >
+          {copied ? "✓ LINK COPIED! 🔥" : "🔥 SEND THIS CHALLENGE"}
         </button>
-        <div style={{textAlign:"center",fontSize:12,color:"#8888AA",marginBottom:16}}>They won't beat your score 😏</div>
-        <button style={{width:"100%",background:"transparent",border:"1.5px solid rgba(255,255,255,0.12)",borderRadius:14,padding:13,color:"rgba(255,255,255,0.7)",fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:".06em",cursor:"pointer",marginBottom:8}} onClick={()=>onReplay(totalScore)}>🔁 PLAY AGAIN</button>
-        <div style={{textAlign:"center",fontSize:11,color:"#8888AA"}}>Most players don't improve their score 😈</div>
+        <div style={{textAlign:"center",fontSize:12,color:"rgba(255,255,255,0.35)",marginBottom:20}}>
+          {isZero ? "Make them suffer too 😈" : isHigh ? "They won't beat that 😤" : "They won't beat your score 😏"}
+        </div>
+
+        {/* SECONDARY CTA — Play again */}
+        <button
+          style={{width:"100%",background:"transparent",border:"1.5px solid rgba(255,255,255,0.1)",borderRadius:14,padding:"12px 16px",color:"rgba(255,255,255,0.45)",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:".06em",cursor:"pointer"}}
+          onClick={() => onReplay(totalScore)}
+        >
+          🔁 PLAY AGAIN
+        </button>
+
       </div>
     </div>
   );
