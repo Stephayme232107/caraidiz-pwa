@@ -1221,15 +1221,21 @@ function PauseScreen({ index, total, streak, correct, onNext }) {
 }
 
 // ─── END ──────────────────────────────────────────────────────
+const PROLIFIC_COMPLETION_URL = "https://app.prolific.com/submissions/complete?cc=C6K8IAAK";
+
 function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) {
   const [copied,       setCopied]      = useState(false);
   const [isNew,        setIsNew]       = useState(false);
-  const [surveyStep,   setSurveyStep]  = useState(0); // 0=enjoyment,1=replay,2=attention,3=difficulty,4=done
+  const [surveyStep,   setSurveyStep]  = useState(0);
   const [surveyDone,   setSurveyDone]  = useState(false);
   const [answers,      setAnswers]     = useState({});
   const total = CARAS.length;
   const pct   = Math.round(correct / total * 100);
   const ts    = Math.round((Date.now() - sessionStart) / 1000);
+
+  // Detect if user comes from Prolific
+  const isProlific = new URLSearchParams(window.location.search).get("utm_source") === "prolific"
+    || !!new URLSearchParams(window.location.search).get("PROLIFIC_PID");
 
   function answerQ(key, value) {
     const newAnswers = { ...answers, [key]: value };
@@ -1402,6 +1408,19 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
           </div>
         ) : (
           <>
+            {/* Prolific completion button — shown only for Prolific users */}
+            {isProlific && (
+              <button
+                style={{width:"100%",background:"linear-gradient(135deg,#4ADE80,#22C55E)",color:"#000",border:"none",borderRadius:16,padding:"18px 16px",fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".08em",cursor:"pointer",marginBottom:12,boxShadow:"0 8px 32px rgba(74,222,128,0.4)"}}
+                onClick={()=>{
+                  mp.track("prolific_completion_clicked", { total_score: totalScore, correct_count: correct });
+                  window.location.href = PROLIFIC_COMPLETION_URL;
+                }}
+              >
+                ✓ COMPLETE & GET PAID
+              </button>
+            )}
+
             {/* Social proof + share msg — shown after survey */}
             <div style={{fontSize:12,fontWeight:800,color:"#80DEEA",letterSpacing:".08em",textTransform:"uppercase",textAlign:"center",marginBottom:12,textShadow:"0 0 20px rgba(128,222,234,0.3)"}}>{socialProof}</div>
             <div style={{fontSize:15,fontWeight:700,color:"#fff",textAlign:"center",marginBottom:16,padding:"0 8px"}}>{dynamicMsg}</div>
