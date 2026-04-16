@@ -1222,11 +1222,68 @@ function PauseScreen({ index, total, streak, correct, onNext }) {
 
 // ─── END ──────────────────────────────────────────────────────
 function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) {
-  const [copied, setCopied] = useState(false);
-  const [isNew,  setIsNew]  = useState(false);
+  const [copied,       setCopied]      = useState(false);
+  const [isNew,        setIsNew]       = useState(false);
+  const [surveyStep,   setSurveyStep]  = useState(0); // 0=enjoyment,1=replay,2=attention,3=difficulty,4=done
+  const [surveyDone,   setSurveyDone]  = useState(false);
+  const [answers,      setAnswers]     = useState({});
   const total = CARAS.length;
   const pct   = Math.round(correct / total * 100);
   const ts    = Math.round((Date.now() - sessionStart) / 1000);
+
+  function answerQ(key, value) {
+    const newAnswers = { ...answers, [key]: value };
+    setAnswers(newAnswers);
+    if (surveyStep < 3) {
+      setSurveyStep(s => s + 1);
+    } else {
+      // All done — track and reveal CTAs
+      mp.track("survey_completed", {
+        total_score:   totalScore,
+        correct_count: correct,
+        ...newAnswers,
+      });
+      setSurveyDone(true);
+    }
+  }
+
+  const SURVEY_QUESTIONS = [
+    {
+      key: "enjoyment",
+      q: "How enjoyable was it?",
+      options: [
+        { label: "😕 Not really",  value: 1 },
+        { label: "😐 It's ok",     value: 3 },
+        { label: "😍 Loved it",    value: 5 },
+      ],
+    },
+    {
+      key: "replay_intent",
+      q: "Would you play again?",
+      options: [
+        { label: "No",    value: "no"    },
+        { label: "Maybe", value: "maybe" },
+        { label: "Yes 🔥", value: "yes"  },
+      ],
+    },
+    {
+      key: "attention",
+      q: "Did it keep your attention?",
+      options: [
+        { label: "Not really", value: "no"  },
+        { label: "Yes",        value: "yes" },
+      ],
+    },
+    {
+      key: "difficulty",
+      q: "How was the difficulty?",
+      options: [
+        { label: "Too easy",  value: "easy"  },
+        { label: "Just right", value: "right" },
+        { label: "Too hard",  value: "hard"  },
+      ],
+    },
+  ];
 
   // ── Dynamic content based on score ──────────────────────────
   const isZero    = correct === 0;
@@ -1310,36 +1367,65 @@ function EndScreen({ totalScore, correct, bestStreak, sessionStart, onReplay }) 
         )}
 
         {/* Score block */}
-        <div className="egrid" style={{width:"100%",marginBottom:8}}>
+        <div className="egrid" style={{width:"100%",marginBottom:16}}>
           <div className="ebox"><div className="en" style={{color:"#80DEEA"}}>{totalScore}</div><div className="el">pts</div></div>
           <div className="ebox"><div className="en" style={{color:"#4ADE80"}}>{correct}/{total}</div><div className="el">correct</div></div>
           <div className="ebox"><div className="en" style={{color:"#FF6B35"}}>🔥{bestStreak}</div><div className="el">streak</div></div>
         </div>
 
-        {/* Social proof */}
-        <div style={{fontSize:12,fontWeight:800,color:"#80DEEA",letterSpacing:".08em",textTransform:"uppercase",textAlign:"center",marginBottom:12,textShadow:"0 0 20px rgba(128,222,234,0.3)"}}>{socialProof}</div>
+        {/* ── SURVEY — shown before CTAs ── */}
+        {!surveyDone ? (
+          <div style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,padding:"16px",marginBottom:16,animation:"fadeUp .25s ease-out"}}>
+            {/* Progress dots */}
+            <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:12}}>
+              {SURVEY_QUESTIONS.map((_,i)=>(
+                <div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<surveyStep?"#80DEEA":i===surveyStep?"rgba(128,222,234,0.6)":"rgba(255,255,255,0.15)",transition:"background .3s"}}/>
+              ))}
+            </div>
+            <div style={{fontSize:14,fontWeight:700,color:"#fff",textAlign:"center",marginBottom:12}}>
+              {SURVEY_QUESTIONS[surveyStep].q}
+            </div>
+            <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+              {SURVEY_QUESTIONS[surveyStep].options.map(opt=>(
+                <button key={opt.value} onClick={()=>answerQ(SURVEY_QUESTIONS[surveyStep].key, opt.value)} style={{
+                  background:"rgba(255,255,255,0.07)",
+                  border:"1.5px solid rgba(255,255,255,0.15)",
+                  borderRadius:12, padding:"10px 16px",
+                  color:"#fff", fontSize:13, fontWeight:700,
+                  cursor:"pointer", transition:"all .15s",
+                  fontFamily:"inherit",
+                }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Social proof + share msg — shown after survey */}
+            <div style={{fontSize:12,fontWeight:800,color:"#80DEEA",letterSpacing:".08em",textTransform:"uppercase",textAlign:"center",marginBottom:12,textShadow:"0 0 20px rgba(128,222,234,0.3)"}}>{socialProof}</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#fff",textAlign:"center",marginBottom:16,padding:"0 8px"}}>{dynamicMsg}</div>
 
-        {/* Dynamic share message */}
-        <div style={{fontSize:15,fontWeight:700,color:"#fff",textAlign:"center",marginBottom:16,padding:"0 8px"}}>{dynamicMsg}</div>
+            {/* PRIMARY CTA — Share */}
+            <button
+              style={{width:"100%",background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",border:"none",borderRadius:16,padding:"18px 16px",fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".08em",cursor:"pointer",marginBottom:6,boxShadow:"0 8px 32px rgba(255,107,53,0.4)",animation:"pulseCTA 1.8s ease-in-out infinite"}}
+              onClick={share}
+            >
+              {copied ? "✓ LINK COPIED! 🔥" : "🔥 SEND THIS CHALLENGE"}
+            </button>
+            <div style={{textAlign:"center",fontSize:12,color:"rgba(255,255,255,0.35)",marginBottom:20}}>
+              {isZero ? "Make them suffer too 😈" : isHigh ? "They won't beat that 😤" : "They won't beat your score 😏"}
+            </div>
 
-        {/* PRIMARY CTA — Share */}
-        <button
-          style={{width:"100%",background:"linear-gradient(135deg,#FF6B35,#FF8A65)",color:"#fff",border:"none",borderRadius:16,padding:"18px 16px",fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".08em",cursor:"pointer",marginBottom:6,boxShadow:"0 8px 32px rgba(255,107,53,0.4)",animation:"pulseCTA 1.8s ease-in-out infinite"}}
-          onClick={share}
-        >
-          {copied ? "✓ LINK COPIED! 🔥" : "🔥 SEND THIS CHALLENGE"}
-        </button>
-        <div style={{textAlign:"center",fontSize:12,color:"rgba(255,255,255,0.35)",marginBottom:20}}>
-          {isZero ? "Make them suffer too 😈" : isHigh ? "They won't beat that 😤" : "They won't beat your score 😏"}
-        </div>
-
-        {/* SECONDARY CTA — Play again */}
-        <button
-          style={{width:"100%",background:"transparent",border:"1.5px solid rgba(255,255,255,0.1)",borderRadius:14,padding:"12px 16px",color:"rgba(255,255,255,0.45)",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:".06em",cursor:"pointer"}}
-          onClick={() => onReplay(totalScore)}
-        >
-          🔁 PLAY AGAIN
-        </button>
+            {/* SECONDARY CTA — Play again */}
+            <button
+              style={{width:"100%",background:"transparent",border:"1.5px solid rgba(255,255,255,0.1)",borderRadius:14,padding:"12px 16px",color:"rgba(255,255,255,0.45)",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:".06em",cursor:"pointer"}}
+              onClick={() => onReplay(totalScore)}
+            >
+              🔁 PLAY AGAIN
+            </button>
+          </>
+        )}
 
       </div>
     </div>
