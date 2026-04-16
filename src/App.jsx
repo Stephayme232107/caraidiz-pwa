@@ -33,10 +33,13 @@ function _defaults() {
 }
 
 const mp = {
-  _q:     [],
-  _ready: false,
+  _q:      [],
+  _ready:  false,
+  _loading: false,
   init() {
     if (!MIXPANEL_TOKEN) return;
+    if (this._ready || this._loading) return;
+    this._loading = true;
     const s = document.createElement("script");
     s.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
     s.onload = () => {
