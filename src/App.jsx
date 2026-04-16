@@ -39,11 +39,21 @@ const mp = {
   init() {
     if (!MIXPANEL_TOKEN) return;
     if (this._ready || this._loading) return;
+    // If already loaded by service worker cache, use it directly
+    if (typeof window.mixpanel !== "undefined" && window.mixpanel.track) {
+      this._ready = true;
+      this._q.forEach(([ev,pr]) => window.mixpanel.track(ev, pr));
+      this._q = [];
+      return;
+    }
     this._loading = true;
     const s = document.createElement("script");
     s.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
     s.onload = () => {
-      window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: false });
+      if (typeof window.mixpanel !== "undefined" && !window.mixpanel.__loaded) {
+        window.mixpanel.init(MIXPANEL_TOKEN, { track_pageview: false });
+        window.mixpanel.__loaded = true;
+      }
       this._ready = true;
       this._q.forEach(([ev,pr]) => window.mixpanel.track(ev, pr));
       this._q = [];
