@@ -184,59 +184,54 @@ function caraProps(cara, index, score=0, streak=0) {
 // ─── TIKTOK COMMENTS ──────────────────────────────────────────
 const TIKTOK_COMMENTS = {
   1:[
-    {user:"player_4821",  text:"THRILLER 🕺 instantly",    correct:true},
-    {user:"guesser_77",   text:"i said beat it 😭",         correct:false},
-    {user:"player_1203",  text:"too easy lmaooo 🔥",        correct:true},
-    {user:"guesser_x9",   text:"the zombie walk 💀",         correct:null},
+    {user:"1nso",              text:"Movie of the zombie",           correct:false},
+    {user:"dounia",            text:"Thriller - Michael Jackson",    correct:true},
+    {user:"Net&Bien",          text:"Thriller",                       correct:true},
   ],
   2:[
-    {user:"player_3341",  text:"UMBRELLA ☂️ first try",     correct:true},
-    {user:"guesser_55",   text:"rain on me?? 😭",            correct:false},
-    {user:"player_8872",  text:"rihanna era unlocked 🔥",    correct:true},
-    {user:"guesser_404",  text:"this is too obvious omg",    correct:null},
+    {user:"1nso",              text:"Umbrella",                       correct:true},
+    {user:"Net&Bien",          text:"mais ouiiii Umbrella",           correct:true},
+    {user:"dounia",            text:"Umbrella",                       correct:true},
+    {user:"victoiredecavalie", text:"too easy! Rihanna !!!!!",       correct:true},
   ],
   3:[
-    {user:"player_2847",  text:"Maybe Wilkinson?",           correct:false},
-    {user:"guesser_19",   text:"Gillette ✓",                 correct:true},
-    {user:"player_6630",  text:"schick?? idk",               correct:false},
-    {user:"guesser_88",   text:"harry's for sure",           correct:false},
-    {user:"player_0012",  text:"gillette the best 🪒",       correct:true},
+    {user:"dounia",            text:"Gilette",                        correct:true},
+    {user:"dimija",            text:"shave",                           correct:false},
+    {user:"Yoro.thai",         text:"May be Wilkinson ?",             correct:false},
+    {user:"Suza3",             text:"Gillette",                       correct:true},
   ],
   4:[
-    {user:"player_5591",  text:"loreal duh ✓",              correct:true},
-    {user:"guesser_302",  text:"maybelline??",               correct:false},
-    {user:"player_7743",  text:"fenty beauty omg ✓",        correct:true},
-    {user:"guesser_61",   text:"i said sephora 💀",          correct:false},
+    {user:"Valentina",         text:"L'Oréal!",                        correct:false},
+    {user:"G",                 text:"Loreal",                          correct:false},
+    {user:"dounia",            text:"Huda Beauty",                     correct:false},
+    {user:"Devanee",           text:"Maybelline !",                   correct:false},
+    {user:"Suza3",             text:"Revlon 😇",                       correct:true},
   ],
   5:[
-    {user:"player_9981",  text:"I BREAK UP WITH YOU 💔",    correct:true},
-    {user:"guesser_24",   text:"we need to talk??",          correct:false},
-    {user:"player_4417",  text:"felt that one 😭",           correct:null},
-    {user:"guesser_773",  text:"got it first try 🔥",        correct:true},
+    {user:"victoiredecavalie", text:"are we in a breakup situation? 😂", correct:null},
+    {user:"Devanee",           text:"You broke my heart !",           correct:false},
+    {user:"TheRealRicMaye",    text:"I don't want you to",            correct:false},
+    {user:"gtwhatyouwant",     text:"WE WERE ON BREAK !",              correct:false},
   ],
   6:[
-    {user:"player_1156",  text:"JR EWING 🤠 iconic",        correct:true},
-    {user:"guesser_99",   text:"no idea who this is ngl",    correct:false},
-    {user:"player_3308",  text:"DALLAS ERA omg yes",         correct:true},
-    {user:"guesser_x7",   text:"legend of television 👑",    correct:null},
+    {user:"player_1156",       text:"JR EWING 🤠 iconic",             correct:true},
+    {user:"guesser_99",        text:"no idea who this is ngl",        correct:false},
+    {user:"player_3308",       text:"DALLAS ERA omg yes",             correct:true},
   ],
   7:[
-    {user:"player_6624",  text:"WOULD YOU MARRY ME 💍",     correct:true},
-    {user:"guesser_180",  text:"crying rn fr 😭",            correct:null},
-    {user:"player_2291",  text:"is it a proposal phrase?",   correct:false},
-    {user:"guesser_55",   text:"got it instantly 🔥",        correct:true},
+    {user:"player_6624",       text:"WOULD YOU MARRY ME 💍",          correct:true},
+    {user:"guesser_180",       text:"crying rn fr 😭",                 correct:null},
+    {user:"player_2291",       text:"is it a proposal phrase?",       correct:false},
   ],
   8:[
-    {user:"player_8803",  text:"OLIVIA POPE 👗🔥",          correct:true},
-    {user:"guesser_412",  text:"grey's anatomy??",           correct:false},
-    {user:"player_0071",  text:"i said suits person",        correct:false},
-    {user:"guesser_x2",   text:"it's handled 💎",            correct:null},
+    {user:"victoiredecavalie", text:"Kimmie Bellarie",                correct:false},
+    {user:"Suza3",             text:"Samantha Jones???",              correct:false},
+    {user:"NassyDiaby",        text:"Wonder women",                    correct:false},
   ],
   9:[
-    {user:"player_5549",  text:"COLDPLAY KISS CAM 🎸",      correct:true},
-    {user:"guesser_331",  text:"concert something??",        correct:false},
-    {user:"player_7720",  text:"TOP 5% 💎 legend",           correct:null},
-    {user:"guesser_88",   text:"iconic moment omg",          correct:true},
+    {user:"player_5549",       text:"COLDPLAY KISS CAM 🎸",           correct:true},
+    {user:"guesser_331",       text:"concert something??",            correct:false},
+    {user:"player_7720",       text:"TOP 5% 💎 legend",                correct:null},
   ],
 };
 
@@ -468,7 +463,7 @@ const G = `
   .cmt-ov-lock{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(128,222,234,0.9);font-weight:700;letter-spacing:.04em;margin-top:2px}
 
   /* ── TIKTOK REVEAL OVERLAY ── */
-  .tiktok-overlay{position:absolute;inset:0;z-index:7;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end}
+  .tiktok-overlay{position:absolute;inset:0;z-index:7;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:280px}
   .tiktok-result{padding:8px 14px 4px;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 100%)}
   .tiktok-answer{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.08em;color:#fff;text-shadow:0 0 20px rgba(255,255,255,0.3);margin-bottom:2px}
   .tiktok-label{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
