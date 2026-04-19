@@ -469,12 +469,12 @@ const G = `
   .tiktok-label{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
   .tiktok-label.ok{color:#4ADE80}
   .tiktok-label.no{color:#FF8A65}
-  .tiktok-cmts{padding:0 14px 10px;display:flex;flex-direction:column;gap:4px}
-  .tiktok-cmt{display:flex;align-items:center;gap:6px;animation:slideUp .3s ease-out both}
-  .tiktok-cmt-user{font-size:11px;font-weight:800;color:rgba(255,255,255,0.7)}
-  .tiktok-cmt-text{font-size:12px;font-weight:500}
+  .tiktok-cmts{padding:0 14px 10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+  .tiktok-cmt{display:flex;align-items:center;gap:6px;animation:slideUp .3s ease-out both;background:rgba(0,0,0,0.62);padding:6px 11px;border-radius:14px;max-width:90%}
+  .tiktok-cmt-user{font-size:11px;font-weight:800;color:rgba(255,255,255,0.85);flex-shrink:0}
+  .tiktok-cmt-text{font-size:12px;font-weight:500;color:#fff}
   .tiktok-cmt-text.correct{color:#4ADE80}
-  .tiktok-cmt-text.wrong{color:rgba(255,255,255,0.65)}
+  .tiktok-cmt-text.wrong{color:#fff}
   .tiktok-cmt-text.neutral{color:#fff}
   .tiktok-sidebar{position:absolute;right:10px;bottom:80px;display:flex;flex-direction:column;align-items:center;gap:14px}
   .tiktok-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
