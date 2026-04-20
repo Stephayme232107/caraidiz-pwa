@@ -464,7 +464,7 @@ const G = `
 
   /* ── TIKTOK REVEAL OVERLAY ── */
   .tiktok-overlay{position:absolute;inset:0;z-index:7;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:280px}
-  .tiktok-result{padding:8px 14px 4px;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 100%)}
+  .tiktok-result{padding:22px 14px 30px;background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.65) 22%, rgba(0,0,0,0.88) 52%, rgba(0,0,0,0.6) 80%, transparent 100%)}
   .tiktok-answer{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.08em;color:#fff;text-shadow:0 0 20px rgba(255,255,255,0.3);margin-bottom:2px}
   .tiktok-label{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
   .tiktok-label.ok{color:#4ADE80}
