@@ -1579,7 +1579,7 @@ function GameScreen({ cara, totalScore, streak, index, total, attempts, setAttem
         {phase==="revealed"&&result&&(
           <div style={{
             position:"absolute", bottom:0, left:0, right:0, zIndex:30,
-            background:"linear-gradient(to top, rgba(0,0,0,0.92) 60%, transparent 100%)",
+            background:"linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.82) 35%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0.18) 85%, transparent 100%)",
             padding:"40px 16px 32px",
           }}>
             {showScore&&(
